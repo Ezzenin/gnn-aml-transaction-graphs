@@ -1,0 +1,47 @@
+{
+  "config": {
+    "seed": 42,
+    "device": "cpu",
+    "dataset": {
+      "name": "elliptic",
+      "root": "data/elliptic"
+    },
+    "model": {
+      "type": "gcn",
+      "params": {
+        "hidden_channels": 64,
+        "dropout": 0.5
+      }
+    },
+    "train": {
+      "epochs": 200,
+      "lr": 0.01,
+      "weight_decay": 0.0005,
+      "patience": 20
+    },
+    "val_fraction": 0.2,
+    "output_dir": "results"
+  },
+  "val_metrics": {
+    "auc_pr": 0.8720745071375589,
+    "roc_auc": 0.9727409689597454,
+    "f1": 0.8242424242424242,
+    "precision": 0.8662420382165605,
+    "recall": 0.7861271676300579,
+    "recall_at_precision_90": 0.7239884393063584,
+    "n_pos": 692,
+    "n_neg": 5287,
+    "threshold": 0.8196982145309448
+  },
+  "test_metrics": {
+    "auc_pr": 0.49489134716492955,
+    "roc_auc": 0.8372374912185327,
+    "f1": 0.4635514018691589,
+    "precision": 0.7126436781609196,
+    "recall": 0.34349030470914127,
+    "recall_at_precision_90": 0.15604801477377656,
+    "n_pos": 1083,
+    "n_neg": 15587,
+    "threshold": 0.8196982145309448
+  }
+}

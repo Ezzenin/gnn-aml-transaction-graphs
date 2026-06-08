@@ -1,0 +1,5 @@
+[tool.pytest.ini_options]
+# Чтобы `from src.* import ...` работал при запуске pytest из корня репозитория.
+pythonpath = ["."]
+testpaths = ["tests"]
+addopts = "-q"

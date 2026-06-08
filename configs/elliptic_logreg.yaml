@@ -1,0 +1,21 @@
+# Второй неграфовый бейзлайн: логистическая регрессия (class_weight=balanced).
+seed: 42
+
+dataset:
+  name: elliptic
+  root: data/elliptic
+
+model:
+  type: logreg
+  params:
+    C: 1.0
+    max_iter: 1000
+
+val_fraction: 0.2
+output_dir: results
+output_name: elliptic_logreg
+
+wandb:
+  enabled: false
+  project: gnn-aml
+  entity: null

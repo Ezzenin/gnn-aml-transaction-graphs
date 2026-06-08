@@ -1,17 +1,21 @@
-# Версии зафиксировать после установки (особенно torch / torch_geometric под CUDA).
-# PyG ставить по официальной инструкции, при необходимости доустановить
-# pyg-lib / torch-scatter / torch-sparse под конкретные torch+CUDA.
-torch
-torch_geometric
-xgboost
-lightgbm
-scikit-learn
-pandas
-numpy
-networkx
-matplotlib
-pyyaml
-tqdm
-wandb            # опционально (логирование экспериментов)
-jupyter
-pytest
+# Версии зафиксированы под окружение этапа 1 (macOS arm64, Python 3.14, CPU/MPS).
+# PyG здесь работает БЕЗ компилируемых расширений (torch-scatter/sparse) — для
+# Elliptic + 2-слойного GCN они не нужны. Под GPU/CUDA torch и PyG ставить по
+# официальной инструкции PyG и при необходимости доустановить pyg-lib/torch-scatter.
+torch==2.10.0
+torch_geometric==2.8.0
+xgboost==3.2.0
+scikit-learn==1.9.0
+pandas==3.0.1
+numpy==2.4.2
+networkx==3.6.1
+matplotlib==3.10.8
+pyyaml==6.0.3
+tqdm==4.67.3
+pytest==9.0.3
+nbconvert==7.17.1
+ipykernel==7.2.0
+
+# Опционально (в этапе 1 не обязательны):
+# lightgbm        # альтернативный градиентный бустинг
+# wandb           # логирование экспериментов (крючок выключен по умолчанию)

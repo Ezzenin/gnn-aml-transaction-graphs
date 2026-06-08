@@ -15,3 +15,9 @@ model:
 
 val_fraction: 0.2        # доля размеченных train-узлов под val (стратифицированно)
 output_dir: results
+output_name: elliptic_baseline   # имя файлов в results/ ({name}_metrics.json / {name}_pr_curve.png)
+
+wandb:
+  enabled: false         # включить логирование одним флагом
+  project: gnn-aml
+  entity: null

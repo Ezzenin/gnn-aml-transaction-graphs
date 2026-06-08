@@ -1,0 +1,74 @@
+{
+  "config": {
+    "seed": 42,
+    "dataset": {
+      "name": "elliptic",
+      "root": "data/elliptic"
+    },
+    "model": {
+      "type": "logreg",
+      "params": {
+        "C": 1.0,
+        "max_iter": 1000
+      }
+    },
+    "val_fraction": 0.2,
+    "output_dir": "results",
+    "output_name": "elliptic_logreg",
+    "wandb": {
+      "enabled": false,
+      "project": "gnn-aml",
+      "entity": null
+    }
+  },
+  "dataset_meta": {
+    "num_nodes": 203769,
+    "num_edges": 234355,
+    "num_features": 165,
+    "label_counts": {
+      "0": 42019,
+      "1": 4545,
+      "2": 157205
+    },
+    "positive_class": 1,
+    "n_labeled": 46564,
+    "splits": {
+      "train": {
+        "n": 29894,
+        "n_pos": 3462,
+        "n_neg": 26432,
+        "pos_rate": 0.11580919248009634
+      },
+      "test": {
+        "n": 16670,
+        "n_pos": 1083,
+        "n_neg": 15587,
+        "pos_rate": 0.06496700659868027
+      }
+    }
+  },
+  "model_type": "logreg",
+  "fixed_threshold_from_val": 0.8390914797782898,
+  "val_metrics": {
+    "auc_pr": 0.8272181796004521,
+    "roc_auc": 0.9734650156179788,
+    "f1": 0.8236130867709816,
+    "precision": 0.8109243697478992,
+    "recall": 0.8367052023121387,
+    "recall_at_precision_90": 0.3208092485549133,
+    "n_pos": 692,
+    "n_neg": 5287,
+    "threshold": 0.8390914797782898
+  },
+  "test_metrics": {
+    "auc_pr": 0.339606315928118,
+    "roc_auc": 0.8906654224070167,
+    "f1": 0.3790101964685402,
+    "precision": 0.25936010891763106,
+    "recall": 0.703601108033241,
+    "recall_at_precision_90": 0.0,
+    "n_pos": 1083,
+    "n_neg": 15587,
+    "threshold": 0.8390914797782898
+  }
+}

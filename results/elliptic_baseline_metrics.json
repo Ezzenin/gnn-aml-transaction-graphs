@@ -1,0 +1,77 @@
+{
+  "config": {
+    "seed": 42,
+    "dataset": {
+      "name": "elliptic",
+      "root": "data/elliptic"
+    },
+    "model": {
+      "type": "xgboost",
+      "params": {
+        "n_estimators": 300,
+        "max_depth": 6,
+        "learning_rate": 0.1,
+        "subsample": 0.8,
+        "colsample_bytree": 0.8
+      }
+    },
+    "val_fraction": 0.2,
+    "output_dir": "results",
+    "output_name": "elliptic_baseline",
+    "wandb": {
+      "enabled": false,
+      "project": "gnn-aml",
+      "entity": null
+    }
+  },
+  "dataset_meta": {
+    "num_nodes": 203769,
+    "num_edges": 234355,
+    "num_features": 165,
+    "label_counts": {
+      "0": 42019,
+      "1": 4545,
+      "2": 157205
+    },
+    "positive_class": 1,
+    "n_labeled": 46564,
+    "splits": {
+      "train": {
+        "n": 29894,
+        "n_pos": 3462,
+        "n_neg": 26432,
+        "pos_rate": 0.11580919248009634
+      },
+      "test": {
+        "n": 16670,
+        "n_pos": 1083,
+        "n_neg": 15587,
+        "pos_rate": 0.06496700659868027
+      }
+    }
+  },
+  "model_type": "xgboost",
+  "fixed_threshold_from_val": 0.5537458062171936,
+  "val_metrics": {
+    "auc_pr": 0.994200544335718,
+    "roc_auc": 0.9985811528112908,
+    "f1": 0.9750367107195301,
+    "precision": 0.991044776119403,
+    "recall": 0.9595375722543352,
+    "recall_at_precision_90": 0.9841040462427746,
+    "n_pos": 692,
+    "n_neg": 5287,
+    "threshold": 0.5537458062171936
+  },
+  "test_metrics": {
+    "auc_pr": 0.7994916683814441,
+    "roc_auc": 0.9313647503563385,
+    "f1": 0.7920199501246883,
+    "precision": 0.8611713665943601,
+    "recall": 0.7331486611265005,
+    "recall_at_precision_90": 0.7294552169898431,
+    "n_pos": 1083,
+    "n_neg": 15587,
+    "threshold": 0.5537458062171936
+  }
+}
