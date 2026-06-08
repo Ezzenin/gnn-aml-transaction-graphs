@@ -1,0 +1,17 @@
+seed: 42
+
+dataset:
+  name: elliptic
+  root: data/elliptic
+
+model:
+  type: xgboost          # xgboost | logreg
+  params:
+    n_estimators: 300
+    max_depth: 6
+    learning_rate: 0.1
+    subsample: 0.8
+    colsample_bytree: 0.8
+
+val_fraction: 0.2        # доля размеченных train-узлов под val (стратифицированно)
+output_dir: results

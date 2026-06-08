@@ -1,0 +1,17 @@
+# Версии зафиксировать после установки (особенно torch / torch_geometric под CUDA).
+# PyG ставить по официальной инструкции, при необходимости доустановить
+# pyg-lib / torch-scatter / torch-sparse под конкретные torch+CUDA.
+torch
+torch_geometric
+xgboost
+lightgbm
+scikit-learn
+pandas
+numpy
+networkx
+matplotlib
+pyyaml
+tqdm
+wandb            # опционально (логирование экспериментов)
+jupyter
+pytest

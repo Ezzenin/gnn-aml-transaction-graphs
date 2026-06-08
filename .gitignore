@@ -216,3 +216,23 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# --- Проект: данные, модели, артефакты ---
+# Данные не коммитим (лицензия Elliptic / IBM AML; PyG скачивает Elliptic в data/)
+data/
+*.csv
+*.parquet
+*.pkl
+*.h5
+
+# Модели и чекпоинты
+*.pt
+*.pth
+checkpoints/
+
+# Weights & Biases
+wandb/
+
+# OS
+.DS_Store
+Thumbs.db
