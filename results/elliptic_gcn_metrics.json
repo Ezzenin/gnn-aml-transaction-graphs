@@ -20,8 +20,42 @@
       "patience": 20
     },
     "val_fraction": 0.2,
-    "output_dir": "results"
+    "output_dir": "results",
+    "output_name": "elliptic_gcn",
+    "wandb": {
+      "enabled": false,
+      "project": "gnn-aml",
+      "entity": null
+    }
   },
+  "model_type": "gcn",
+  "dataset_meta": {
+    "num_nodes": 203769,
+    "num_edges": 234355,
+    "num_features": 165,
+    "label_counts": {
+      "0": 42019,
+      "1": 4545,
+      "2": 157205
+    },
+    "positive_class": 1,
+    "n_labeled": 46564,
+    "splits": {
+      "train": {
+        "n": 29894,
+        "n_pos": 3462,
+        "n_neg": 26432,
+        "pos_rate": 0.11580919248009634
+      },
+      "test": {
+        "n": 16670,
+        "n_pos": 1083,
+        "n_neg": 15587,
+        "pos_rate": 0.06496700659868027
+      }
+    }
+  },
+  "fixed_threshold_from_val": 0.8196982145309448,
   "val_metrics": {
     "auc_pr": 0.8720745071375589,
     "roc_auc": 0.9727409689597454,

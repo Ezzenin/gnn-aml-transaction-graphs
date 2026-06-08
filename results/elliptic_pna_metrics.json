@@ -1,0 +1,81 @@
+{
+  "config": {
+    "seed": 42,
+    "device": "cpu",
+    "dataset": {
+      "name": "elliptic",
+      "root": "data/elliptic"
+    },
+    "model": {
+      "type": "pna",
+      "params": {
+        "hidden_channels": 64,
+        "dropout": 0.5
+      }
+    },
+    "train": {
+      "epochs": 200,
+      "lr": 0.005,
+      "weight_decay": 0.0005,
+      "patience": 20
+    },
+    "val_fraction": 0.2,
+    "output_dir": "results",
+    "output_name": "elliptic_pna",
+    "wandb": {
+      "enabled": false,
+      "project": "gnn-aml",
+      "entity": null
+    }
+  },
+  "model_type": "pna",
+  "dataset_meta": {
+    "num_nodes": 203769,
+    "num_edges": 234355,
+    "num_features": 165,
+    "label_counts": {
+      "0": 42019,
+      "1": 4545,
+      "2": 157205
+    },
+    "positive_class": 1,
+    "n_labeled": 46564,
+    "splits": {
+      "train": {
+        "n": 29894,
+        "n_pos": 3462,
+        "n_neg": 26432,
+        "pos_rate": 0.11580919248009634
+      },
+      "test": {
+        "n": 16670,
+        "n_pos": 1083,
+        "n_neg": 15587,
+        "pos_rate": 0.06496700659868027
+      }
+    }
+  },
+  "fixed_threshold_from_val": 0.8100109100341797,
+  "val_metrics": {
+    "auc_pr": 0.8944018905099281,
+    "roc_auc": 0.9769354650024983,
+    "f1": 0.8527918781725888,
+    "precision": 0.8558951965065502,
+    "recall": 0.8497109826589595,
+    "recall_at_precision_90": 0.638728323699422,
+    "n_pos": 692,
+    "n_neg": 5287,
+    "threshold": 0.8100109100341797
+  },
+  "test_metrics": {
+    "auc_pr": 0.2554575339556977,
+    "roc_auc": 0.8600516530070013,
+    "f1": 0.37154337036161666,
+    "precision": 0.2496823379923761,
+    "recall": 0.7257617728531855,
+    "recall_at_precision_90": 0.003693444136657433,
+    "n_pos": 1083,
+    "n_neg": 15587,
+    "threshold": 0.8100109100341797
+  }
+}

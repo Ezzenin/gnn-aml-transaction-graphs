@@ -1,0 +1,29 @@
+# GNN-линейка на Elliptic: PNA (несколько агрегаторов + скейлеров).
+# Требует гистограмму степеней обучающего графа (считается на рантайме).
+seed: 42
+device: cpu
+
+dataset:
+  name: elliptic
+  root: data/elliptic
+
+model:
+  type: pna
+  params:
+    hidden_channels: 64
+    dropout: 0.5
+
+train:
+  epochs: 200
+  lr: 0.005
+  weight_decay: 0.0005
+  patience: 20
+
+val_fraction: 0.2
+output_dir: results
+output_name: elliptic_pna
+
+wandb:
+  enabled: false
+  project: gnn-aml
+  entity: null

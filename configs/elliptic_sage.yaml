@@ -1,13 +1,13 @@
-# GNN-линейка на Elliptic: GCN. Тот же временно́й сплит и метрики, что у бейзлайна.
+# GNN-линейка на Elliptic: GraphSAGE.
 seed: 42
-device: cpu              # cpu | mps | cuda
+device: cpu
 
 dataset:
   name: elliptic
   root: data/elliptic
 
 model:
-  type: gcn
+  type: sage
   params:
     hidden_channels: 64
     dropout: 0.5
@@ -20,7 +20,7 @@ train:
 
 val_fraction: 0.2
 output_dir: results
-output_name: elliptic_gcn
+output_name: elliptic_sage
 
 wandb:
   enabled: false

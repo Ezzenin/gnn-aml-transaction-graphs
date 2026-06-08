@@ -50,5 +50,20 @@ pytest -q
 python -m src.train_baseline --config configs/elliptic_xgb.yaml
 ```
 
+## GNN-линейка на Elliptic
+Архитектуры (единый фактори-реестр `src/models.py`): **GCN, GraphSAGE, GAT, GIN, PNA**.
+Тот же временно́й сплит, та же система метрик и фиксация порога по val, что у бейзлайна.
+
+```bash
+python -m src.train --config configs/elliptic_gat.yaml   # одна модель
+python -m src.compare --run                              # все модели + сводная таблица/график
+```
+Сводка: `results/comparison.md` и `results/comparison_models.png`.
+
+Результаты (test, AUC-PR): сильнейший — табличный **XGBoost (0.80)**; среди GNN лучший
+**GraphSAGE (0.66)**. Все статические GNN заметно теряют на test относительно val —
+известный эффект распределенческого сдвига Elliptic (поздние временны́е шаги). Это
+мотивирует следующий этап: темпоральные модели (EvolveGCN) и Multi-GNN адаптации.
+
 ## Автор
 Ezzenin · eseninaleksandr@gmail.com
