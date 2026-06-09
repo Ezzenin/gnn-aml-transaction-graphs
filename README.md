@@ -68,6 +68,20 @@ python -m src.compare --run                              # все модели +
 Строгий temporal-val (порог фиксируется на хронологически поздних train-узлах):
 `configs/elliptic_gcn_temporal.yaml` (`temporal_val: true`).
 
+## Данные IBM AML (HI-Small) — для Этапа 2
+Датасет: Kaggle [`ealtman2019/ibm-transactions-for-anti-money-laundering-aml`](https://www.kaggle.com/datasets/ealtman2019/ibm-transactions-for-anti-money-laundering-aml).
+Скачать **только** вариант **HI-Small** (НЕ Medium/Large) — два файла:
+```
+data/ibm_aml/HI-Small_Trans.csv      # ~5.08M транзакций, метка Is Laundering
+data/ibm_aml/HI-Small_Patterns.txt   # инстансы 8 паттернов отмывания
+```
+Данные не коммитятся (`data/` в `.gitignore`). Загрузчик — `src.datasets.load_ibm_aml`:
+направленный мультиграф «узел = счёт, ребро = транзакция», edge-classification,
+строгий **temporal split** (train=ранние t, val=поздняя доля train, test=поздние t),
+узловые признаки (degree + log-суммы) считаются только по train-рёбрам (антиутечка).
+Привязка позитивов к типу паттерна — `src.datasets.parse_ibm_patterns`.
+Реальная статистика: 515k счетов, 5.08M рёбер, illicit-доля ~0.10%.
+
 ## Логирование (Weights & Biases)
 Единая точка — `src.utils.init_wandb`. По умолчанию **выключено**. Включение:
 ```bash
