@@ -4,7 +4,7 @@ from __future__ import annotations
 import json
 import os
 import random
-from typing import Any
+from typing import Any, Optional
 
 import numpy as np
 
@@ -45,6 +45,39 @@ def get_device():
     if torch.backends.mps.is_available():
         return torch.device("mps")
     return torch.device("cpu")
+
+
+def init_wandb(config: dict, run_name: Optional[str] = None):
+    """Единая точка инициализации W&B с мягким fallback.
+
+    Включается, если в конфиге `wandb.enabled: true` ИЛИ задана переменная
+    окружения WANDB_MODE (online|offline). При отсутствии пакета/ключа или любой
+    ошибке — возвращает None и не роняет обучение.
+
+    Возвращает объект run (модуль wandb) либо None.
+    """
+    wb_cfg = (config or {}).get("wandb", {}) or {}
+    env_mode = os.environ.get("WANDB_MODE")
+    enabled = bool(wb_cfg.get("enabled", False)) or (env_mode in ("online", "offline"))
+    if not enabled:
+        return None
+    try:
+        import wandb
+    except ImportError:
+        print("[wandb] пакет не установлен — логирование пропущено (pip install wandb)")
+        return None
+    try:
+        wandb.init(
+            project=wb_cfg.get("project", "gnn-aml"),
+            entity=wb_cfg.get("entity"),
+            name=run_name,
+            config=config,
+            mode=env_mode,  # None → online по умолчанию
+        )
+        return wandb
+    except Exception as e:  # noqa: BLE001
+        print(f"[wandb] init не удался: {e} — логирование пропущено")
+        return None
 
 
 def save_json(obj: dict, path: str) -> None:

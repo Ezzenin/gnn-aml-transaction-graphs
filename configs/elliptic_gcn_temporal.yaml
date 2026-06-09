@@ -1,0 +1,29 @@
+# GCN на Elliptic со строгим temporal-val (val = поздние train-узлы, антиутечка).
+seed: 42
+device: cpu
+
+dataset:
+  name: elliptic
+  root: data/elliptic
+
+model:
+  type: gcn
+  params:
+    hidden_channels: 64
+    dropout: 0.5
+
+train:
+  epochs: 200
+  lr: 0.01
+  weight_decay: 0.0005
+  patience: 20
+
+val_fraction: 0.2
+temporal_val: true       # val = хронологически поздние train-узлы
+output_dir: results
+output_name: elliptic_gcn_temporal
+
+wandb:
+  enabled: false
+  project: gnn-aml
+  entity: null

@@ -15,7 +15,7 @@ import os
 from src.baselines import predict_scores, train_logreg, train_xgboost
 from src.datasets import get_xy, load_elliptic, make_val_split
 from src.metrics import evaluate, pr_curve_figure
-from src.utils import load_config, save_json, set_seed
+from src.utils import init_wandb, load_config, save_json, set_seed
 
 
 def run(config: dict) -> dict:
@@ -82,7 +82,7 @@ def run(config: dict) -> dict:
     pr_curve_figure(y_test, test_scores, pr_path)
     print(f"[saved] {metrics_path}\n[saved] {pr_path}")
 
-    _maybe_log_wandb(config, val_metrics, test_metrics)
+    _log_wandb(config, name, val_metrics, test_metrics, pr_path)
     return result
 
 
@@ -94,24 +94,16 @@ def _print_metrics(tag: str, m: dict) -> None:
     )
 
 
-def _maybe_log_wandb(config: dict, val_metrics: dict, test_metrics: dict) -> None:
-    """Опциональное логирование в W&B (выключено по умолчанию)."""
-    wb = config.get("wandb", {})
-    if not wb.get("enabled", False):
+def _log_wandb(config: dict, run_name: str, val_metrics: dict, test_metrics: dict, pr_path: str) -> None:
+    """Логирование бейзлайна в W&B через единый init_wandb (off по умолчанию)."""
+    wb = init_wandb(config, run_name=run_name)
+    if wb is None:
         return
-    try:
-        import wandb
-
-        wandb.init(
-            project=wb.get("project", "gnn-aml"),
-            entity=wb.get("entity"),
-            config=config,
-        )
-        wandb.log({f"val/{k}": v for k, v in val_metrics.items() if isinstance(v, (int, float))})
-        wandb.log({f"test/{k}": v for k, v in test_metrics.items() if isinstance(v, (int, float))})
-        wandb.finish()
-    except Exception as e:  # noqa: BLE001
-        print(f"[wandb] пропущено: {e}")
+    wb.log({f"val/{k}": v for k, v in val_metrics.items() if isinstance(v, (int, float))})
+    wb.log({f"test/{k}": v for k, v in test_metrics.items() if isinstance(v, (int, float))})
+    if os.path.exists(pr_path):
+        wb.log({"pr_curve": wb.Image(pr_path)})
+    wb.finish()
 
 
 def main() -> None:

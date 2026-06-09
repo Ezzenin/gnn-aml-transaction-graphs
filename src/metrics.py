@@ -88,6 +88,54 @@ def recall_at_precision(y_true, y_score, min_precision: float = 0.9) -> float:
     return float(recall[mask].max())
 
 
+def evaluate_per_group(
+    y_true,
+    y_score,
+    group_labels,
+    threshold: float,
+    groups: Optional[list] = None,
+) -> dict:
+    """Метрики по типам паттернов: для каждого типа цепочки — насколько модель её ловит.
+
+    y_true: бинарные метки (1 = laundering/illicit).
+    y_score: вероятности позитивного класса.
+    group_labels: для каждого объекта — строковый тип паттерна позитива
+        (fan_out, fan_in, ..., stack) либо 'none' для негативов.
+    threshold: единый порог (тот же, что для общей метрики — обычно фиксируется по val).
+    groups: список интересующих паттернов; по умолчанию — все встретившиеся у позитивов.
+
+    Логика: для каждого паттерна берём его позитивы vs ВСЕ негативы и считаем
+    f1/precision/recall + сколько позитивов этого типа поймано. Главный сигнал —
+    recall и n_detected/n_pos: какие цепочки модель видит, а какие пропускает.
+    Возвращает {pattern: {f1, precision, recall, n_pos, n_detected}}.
+    """
+    y_true = np.asarray(y_true).astype(int)
+    y_score = np.asarray(y_score, dtype=float)
+    group_labels = np.asarray(group_labels, dtype=object)
+    y_pred = (y_score >= threshold).astype(int)
+
+    neg_mask = y_true == 0
+    if groups is None:
+        groups = sorted({g for g, t in zip(group_labels, y_true) if t == 1})
+
+    result: dict = {}
+    for g in groups:
+        pos_mask = (y_true == 1) & (group_labels == g)
+        n_pos = int(pos_mask.sum())
+        if n_pos == 0:
+            continue
+        sub = pos_mask | neg_mask  # позитивы этого типа против всех негативов
+        yt, yp = y_true[sub], y_pred[sub]
+        result[g] = {
+            "f1": float(f1_score(yt, yp, zero_division=0)),
+            "precision": float(precision_score(yt, yp, zero_division=0)),
+            "recall": float(recall_score(yt, yp, zero_division=0)),
+            "n_pos": n_pos,
+            "n_detected": int(y_pred[pos_mask].sum()),
+        }
+    return result
+
+
 def pr_curve_figure(y_true, y_score, path: str) -> None:
     """Построить и сохранить PR-кривую (с отметкой AUC-PR) в файл path."""
     import os

@@ -13,20 +13,35 @@ from __future__ import annotations
 import argparse
 import os
 
+import numpy as np
 import torch
 import torch.nn.functional as F
 
-from src.datasets import load_elliptic, make_val_split
+from src.datasets import (
+    load_elliptic,
+    load_node_time_steps,
+    make_temporal_val_split,
+    make_val_split,
+)
 from src.metrics import evaluate, pr_curve_figure
 from src.models import build_model, compute_degree_histogram
-from src.utils import load_config, save_json, set_seed
+from src.utils import init_wandb, load_config, save_json, set_seed
 
 
-def _build_masks(data, pos: int, val_fraction: float, seed: int):
-    """Из train_mask выделить стратифицированный val; вернуть (train_sub, val)."""
+def _build_masks(data, pos: int, val_fraction: float, seed: int,
+                 temporal_val: bool = False, time_steps=None):
+    """Из train_mask выделить val; вернуть (train_sub, val).
+
+    temporal_val=True → val = хронологически поздние train-узлы (без утечки при
+    подборе порога). Иначе — стратифицированный случайный val внутри train.
+    """
     train_idx = data.train_mask.nonzero(as_tuple=False).view(-1)
-    y_train_bin = (data.y[train_idx] == pos).long().cpu().numpy()
-    tr_pos, va_pos = make_val_split(y_train_bin, val_fraction, seed)
+    if temporal_val and time_steps is not None:
+        ts_train = np.asarray(time_steps)[train_idx.cpu().numpy()]
+        tr_pos, va_pos = make_temporal_val_split(ts_train, val_fraction)
+    else:
+        y_train_bin = (data.y[train_idx] == pos).long().cpu().numpy()
+        tr_pos, va_pos = make_val_split(y_train_bin, val_fraction, seed)
 
     n = data.num_nodes
     train_sub = torch.zeros(n, dtype=torch.bool)
@@ -47,7 +62,11 @@ def run(config: dict) -> dict:
     y_bin = (data.y == pos).long()
 
     val_fraction = float(config.get("val_fraction", 0.2))
-    train_sub, val_mask = _build_masks(data, pos, val_fraction, seed)
+    temporal_val = bool(config.get("temporal_val", False))
+    time_steps = load_node_time_steps(ds_cfg.get("root", "data/elliptic")) if temporal_val else None
+    if temporal_val:
+        print("[val] строгий temporal-split: val = поздние train-узлы")
+    train_sub, val_mask = _build_masks(data, pos, val_fraction, seed, temporal_val, time_steps)
     test_mask = data.test_mask
 
     model_cfg = config.get("model", {})
@@ -88,7 +107,7 @@ def run(config: dict) -> dict:
     n_neg = int(train_sub.sum()) - n_pos
     class_weight = torch.tensor([1.0, n_neg / max(n_pos, 1)], device=device)
 
-    wb = _maybe_init_wandb(config, model_type)
+    wb = init_wandb(config, run_name=config.get("output_name", f"elliptic_{model_type}"))
 
     best_val, best_state, bad = -1.0, None, 0
     for epoch in range(1, epochs + 1):
@@ -139,6 +158,8 @@ def run(config: dict) -> dict:
 
     if wb is not None:
         wb.log({f"test/{k}": v for k, v in test_m.items() if isinstance(v, (int, float))})
+        if os.path.exists(pr_path):
+            wb.log({"pr_curve": wb.Image(pr_path)})
         wb.finish()
     return {"val_metrics": val_m, "test_metrics": test_m}
 
@@ -162,26 +183,6 @@ def _eval_split(model, data, y_bin, mask, threshold=None) -> dict:
 
 def _clone_state(model):
     return {k: v.detach().cpu().clone() for k, v in model.state_dict().items()}
-
-
-def _maybe_init_wandb(config: dict, model_type: str):
-    """Опциональная инициализация W&B (выключена по умолчанию)."""
-    wb_cfg = config.get("wandb", {})
-    if not wb_cfg.get("enabled", False):
-        return None
-    try:
-        import wandb
-
-        wandb.init(
-            project=wb_cfg.get("project", "gnn-aml"),
-            entity=wb_cfg.get("entity"),
-            name=f"elliptic-{model_type}",
-            config=config,
-        )
-        return wandb
-    except Exception as e:  # noqa: BLE001
-        print(f"[wandb] пропущено: {e}")
-        return None
 
 
 def main() -> None:

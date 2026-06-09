@@ -2,7 +2,7 @@
 import numpy as np
 import pytest
 
-from src.metrics import evaluate, recall_at_precision
+from src.metrics import evaluate, evaluate_per_group, recall_at_precision
 
 
 def test_perfect_separation():
@@ -57,6 +57,36 @@ def test_fixed_threshold_is_respected():
     m = evaluate(y_true, y_score, threshold=0.5)
     assert m["threshold"] == pytest.approx(0.5)
     assert m["f1"] == pytest.approx(1.0)
+
+
+def test_evaluate_per_group_detects_per_pattern():
+    # 4 негатива + 2 паттерна по 2 позитива. fan_in ловится, cycle — нет.
+    y_true = np.array([0, 0, 0, 0, 1, 1, 1, 1])
+    group = np.array(["none", "none", "none", "none",
+                      "fan_in", "fan_in", "cycle", "cycle"], dtype=object)
+    y_score = np.array([0.10, 0.20, 0.05, 0.15, 0.90, 0.80, 0.20, 0.10])
+    res = evaluate_per_group(y_true, y_score, group, threshold=0.5)
+
+    assert set(res) == {"fan_in", "cycle"}
+    # fan_in: оба пойманы.
+    assert res["fan_in"]["n_pos"] == 2
+    assert res["fan_in"]["n_detected"] == 2
+    assert res["fan_in"]["recall"] == pytest.approx(1.0)
+    assert res["fan_in"]["precision"] == pytest.approx(1.0)  # негативы все < 0.5
+    # cycle: ни одного.
+    assert res["cycle"]["n_pos"] == 2
+    assert res["cycle"]["n_detected"] == 0
+    assert res["cycle"]["recall"] == pytest.approx(0.0)
+    assert res["cycle"]["f1"] == pytest.approx(0.0)
+
+
+def test_evaluate_per_group_respects_groups_arg():
+    y_true = np.array([0, 0, 1, 1])
+    group = np.array(["none", "none", "stack", "fan_out"], dtype=object)
+    y_score = np.array([0.1, 0.2, 0.9, 0.3])
+    res = evaluate_per_group(y_true, y_score, group, threshold=0.5, groups=["stack"])
+    assert set(res) == {"stack"}
+    assert res["stack"]["n_detected"] == 1
 
 
 def test_pr_curve_figure_saved(tmp_path):

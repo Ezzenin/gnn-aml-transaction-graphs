@@ -108,6 +108,37 @@ def make_val_split(y_binary, val_fraction: float = 0.2, seed: int = 42):
     return train_pos, val_pos
 
 
+def load_node_time_steps(root: str = "data/elliptic") -> np.ndarray:
+    """Временно́й шаг (1..49) каждого узла Elliptic из сырого features-CSV.
+
+    Порядок строк features-CSV = порядок узлов в PyG-датасете (node i = строка i),
+    поэтому колонка времени (индекс 1) напрямую выравнивается на индексы узлов.
+    Нужно для строгого temporal-val (брать поздние шаги как val).
+    """
+    import os
+
+    import pandas as pd
+
+    path = os.path.join(root, "raw", "elliptic_txs_features.csv")
+    df = pd.read_csv(path, header=None)
+    return df.iloc[:, 1].to_numpy().astype(int)
+
+
+def make_temporal_val_split(time_steps, val_fraction: float = 0.2):
+    """Val = узлы с самыми поздними временны́ми шагами (доля val_fraction).
+
+    time_steps: массив временны́х шагов для подвыборки (обычно train-узлов).
+    Возвращает (train_pos, val_pos) — позиции внутри переданной подвыборки.
+    В отличие от случайного сплита, исключает утечку «из будущего в прошлое»
+    при подборе порога: порог фиксируется на хронологически последних train-узлах.
+    """
+    time_steps = np.asarray(time_steps)
+    order = np.argsort(time_steps, kind="stable")  # по возрастанию времени
+    n = len(order)
+    n_val = max(1, int(round(n * val_fraction)))
+    return order[: n - n_val], order[n - n_val :]
+
+
 if __name__ == "__main__":
     # Быстрая ручная проверка структуры датасета.
     warnings.filterwarnings("ignore")
