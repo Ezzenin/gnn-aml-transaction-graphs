@@ -1,0 +1,205 @@
+{
+  "config": {
+    "seed": 42,
+    "dataset": {
+      "name": "ibm_aml",
+      "root": "data/ibm_aml",
+      "variant": "HI-Small"
+    },
+    "model": {
+      "type": "xgboost",
+      "params": {
+        "n_estimators": 400,
+        "max_depth": 7,
+        "learning_rate": 0.1,
+        "subsample": 0.8,
+        "colsample_bytree": 0.8,
+        "n_jobs": 0
+      }
+    },
+    "output_dir": "results",
+    "output_name": "ibm_xgboost",
+    "wandb": {
+      "enabled": false,
+      "project": "gnn-aml",
+      "entity": null
+    }
+  },
+  "dataset_meta": {
+    "variant": "HI-Small",
+    "num_nodes": 515088,
+    "num_edges": 5078345,
+    "num_node_features": 5,
+    "num_edge_features": 6,
+    "n_illicit": 5177,
+    "illicit_rate": 0.0010194266045335635,
+    "patterns_matched": 3209,
+    "patterns_total_illicit": 5177,
+    "pattern_counts": {
+      "bipartite": 263,
+      "cycle": 287,
+      "fan_in": 318,
+      "fan_out": 342,
+      "gather_scatter": 716,
+      "random": 191,
+      "scatter_gather": 626,
+      "stack": 466,
+      "unknown": 1968
+    },
+    "encoders": {
+      "receiving_currency": [
+        "US Dollar",
+        "Bitcoin",
+        "Euro",
+        "Australian Dollar",
+        "Yuan",
+        "Rupee",
+        "Mexican Peso",
+        "Yen",
+        "UK Pound",
+        "Ruble",
+        "Canadian Dollar",
+        "Swiss Franc",
+        "Brazil Real",
+        "Saudi Riyal",
+        "Shekel"
+      ],
+      "payment_currency": [
+        "US Dollar",
+        "Bitcoin",
+        "Euro",
+        "Australian Dollar",
+        "Yuan",
+        "Rupee",
+        "Yen",
+        "Mexican Peso",
+        "UK Pound",
+        "Ruble",
+        "Canadian Dollar",
+        "Swiss Franc",
+        "Brazil Real",
+        "Saudi Riyal",
+        "Shekel"
+      ],
+      "payment_format": [
+        "Reinvestment",
+        "Cheque",
+        "Credit Card",
+        "ACH",
+        "Cash",
+        "Wire",
+        "Bitcoin"
+      ]
+    },
+    "time_range_unix": [
+      1661990400,
+      1663517880
+    ],
+    "splits": {
+      "train": {
+        "n": 3300881,
+        "n_pos": 2556,
+        "pos_rate": 0.0007743387295694695
+      },
+      "val": {
+        "n": 761582,
+        "n_pos": 823,
+        "pos_rate": 0.0010806452883602817
+      },
+      "test": {
+        "n": 1015882,
+        "n_pos": 1798,
+        "pos_rate": 0.0017698905975300282
+      }
+    }
+  },
+  "model_type": "xgboost",
+  "fixed_threshold_from_val": 0.9761121273040771,
+  "val_metrics": {
+    "auc_pr": 0.1394797573065379,
+    "roc_auc": 0.9788064497657938,
+    "f1": 0.21624173748819642,
+    "precision": 0.17683397683397684,
+    "recall": 0.2782503037667072,
+    "recall_at_precision_90": 0.0,
+    "n_pos": 823,
+    "n_neg": 760759,
+    "threshold": 0.9761121273040771
+  },
+  "test_metrics": {
+    "auc_pr": 0.12889969636972126,
+    "roc_auc": 0.9674359896968603,
+    "f1": 0.18997472620050548,
+    "precision": 0.1528813559322034,
+    "recall": 0.25083426028921024,
+    "recall_at_precision_90": 0.0,
+    "n_pos": 1798,
+    "n_neg": 1014084,
+    "threshold": 0.9761121273040771
+  },
+  "per_pattern": {
+    "fan_out": {
+      "f1": 0.036458333333333336,
+      "precision": 0.019230769230769232,
+      "recall": 0.35,
+      "n_pos": 140,
+      "n_detected": 49
+    },
+    "fan_in": {
+      "f1": 0.027684249906472128,
+      "precision": 0.014589905362776025,
+      "recall": 0.27007299270072993,
+      "n_pos": 137,
+      "n_detected": 37
+    },
+    "gather_scatter": {
+      "f1": 0.07436918990703852,
+      "precision": 0.04289544235924933,
+      "recall": 0.2793017456359102,
+      "n_pos": 401,
+      "n_detected": 112
+    },
+    "scatter_gather": {
+      "f1": 0.046858359957401494,
+      "precision": 0.025730994152046785,
+      "recall": 0.2619047619047619,
+      "n_pos": 252,
+      "n_detected": 66
+    },
+    "cycle": {
+      "f1": 0.02872260015117158,
+      "precision": 0.014978320851399291,
+      "recall": 0.3486238532110092,
+      "n_pos": 109,
+      "n_detected": 38
+    },
+    "random": {
+      "f1": 0.013830195927775643,
+      "precision": 0.007151370679380214,
+      "recall": 0.20930232558139536,
+      "n_pos": 86,
+      "n_detected": 18
+    },
+    "bipartite": {
+      "f1": 0.017719568567026195,
+      "precision": 0.009119746233148296,
+      "recall": 0.3108108108108108,
+      "n_pos": 74,
+      "n_detected": 23
+    },
+    "stack": {
+      "f1": 0.028389988793425476,
+      "precision": 0.014978320851399291,
+      "recall": 0.2714285714285714,
+      "n_pos": 140,
+      "n_detected": 38
+    },
+    "unknown": {
+      "f1": 0.046235138705416116,
+      "precision": 0.027247956403269755,
+      "recall": 0.15250544662309368,
+      "n_pos": 459,
+      "n_detected": 70
+    }
+  }
+}

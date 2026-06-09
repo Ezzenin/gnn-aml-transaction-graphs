@@ -306,6 +306,32 @@ def load_ibm_aml(
     return data, meta
 
 
+def build_edge_features(data) -> np.ndarray:
+    """Табличные признаки ребра для XGBoost-бейзлайна на IBM AML.
+
+    Состав: edge_attr (6) + узловые фичи отправителя (5) + узловые фичи
+    получателя (5) + log1p числа параллельных рёбер пары (1) = 17.
+    Число параллельных рёбер считается ПО TRAIN-рёбрам (антиутечка), узловые
+    фичи в data.x тоже посчитаны по train. Векторизовано через целочисленный
+    ключ пары src*num_nodes+dst.
+    """
+    src = data.edge_index[0].numpy()
+    dst = data.edge_index[1].numpy()
+    x = data.x.numpy()
+    ea = data.edge_attr.numpy()
+    num_nodes = int(data.num_nodes)
+
+    key_all = src.astype(np.int64) * num_nodes + dst.astype(np.int64)
+    tm = data.train_mask.numpy()
+    uniq, cnt = np.unique(key_all[tm], return_counts=True)
+    idx = np.clip(np.searchsorted(uniq, key_all), 0, max(len(uniq) - 1, 0))
+    parallel = np.where(uniq[idx] == key_all, cnt[idx], 0).astype(np.float32)
+
+    return np.concatenate(
+        [ea, x[src], x[dst], np.log1p(parallel).reshape(-1, 1)], axis=1
+    ).astype(np.float32)
+
+
 def load_node_time_steps(root: str = "data/elliptic") -> np.ndarray:
     """Временно́й шаг (1..49) каждого узла Elliptic из сырого features-CSV.
 

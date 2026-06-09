@@ -27,12 +27,14 @@ def train_xgboost(X_train, y_train, X_val, y_val, params: dict):
     params = dict(params or {})
     params.setdefault("scale_pos_weight", _scale_pos_weight(y_train))
     early_stopping_rounds = params.pop("early_stopping_rounds", 30)
+    # n_jobs=1 по умолчанию (детерминизм на Elliptic); на больших IBM можно >1.
+    n_jobs = params.pop("n_jobs", 1)
 
     model = XGBClassifier(
         objective="binary:logistic",
         eval_metric="aucpr",
         tree_method="hist",
-        n_jobs=1,  # детерминизм важнее скорости на этих объёмах
+        n_jobs=n_jobs,
         random_state=params.pop("random_state", 42),
         early_stopping_rounds=early_stopping_rounds,
         **params,
