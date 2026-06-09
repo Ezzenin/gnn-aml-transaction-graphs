@@ -1,0 +1,39 @@
+# Бейзлайн C2: базовая edge-GNN (GINe) на IBM AML HI-Small.
+seed: 42
+device: cpu
+
+dataset:
+  name: ibm_aml
+  root: data/ibm_aml
+  variant: HI-Small
+  # max_rows: 300000   # быстрый прогон на подвыборке
+
+model:
+  type: gine
+  params:
+    hidden: 64
+    num_layers: 2
+    dropout: 0.5
+    reverse_mp: false     # адаптации — Фаза D
+    ports: false
+    ego_ids: false
+
+train:
+  num_neighbors: [10, 10]
+  batch_size: 2048
+  neg_ratio: 20           # негативов = 20×позитивов в train-наборе
+  val_neg_cap: 50000      # негативов в val-сэмпле для ранней остановки
+  epochs: 15
+  patience: 5
+  lr: 0.005
+  weight_decay: 0.0005
+
+output_dir: results
+output_name: ibm_gine
+checkpoint_dir: checkpoints
+save_checkpoint: true
+
+wandb:
+  enabled: false
+  project: gnn-aml
+  entity: null

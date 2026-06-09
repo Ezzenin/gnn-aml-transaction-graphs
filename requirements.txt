@@ -1,9 +1,11 @@
-# Версии зафиксированы под окружение этапа 1 (macOS arm64, Python 3.14, CPU/MPS).
-# PyG здесь работает БЕЗ компилируемых расширений (torch-scatter/sparse) — для
-# Elliptic + 2-слойного GCN они не нужны. Под GPU/CUDA torch и PyG ставить по
-# официальной инструкции PyG и при необходимости доустановить pyg-lib/torch-scatter.
+# Версии зафиксированы под окружение (macOS arm64, Python 3.14, CPU/MPS).
+# pyg-lib нужен для LinkNeighborLoader (мини-батчи edge-GNN на IBM AML);
+# ставится с индексом колёс PyG (строка --find-links ниже). Под GPU/CUDA torch и
+# PyG ставить по официальной инструкции PyG.
+--find-links https://data.pyg.org/whl/torch-2.10.0+cpu.html
 torch==2.10.0
 torch_geometric==2.8.0
+pyg-lib==0.7.0+pt210
 xgboost==3.2.0
 scikit-learn==1.9.0
 pandas==3.0.1
