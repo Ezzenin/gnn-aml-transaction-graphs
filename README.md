@@ -65,5 +65,19 @@ python -m src.compare --run                              # все модели +
 известный эффект распределенческого сдвига Elliptic (поздние временны́е шаги). Это
 мотивирует следующий этап: темпоральные модели (EvolveGCN) и Multi-GNN адаптации.
 
+Строгий temporal-val (порог фиксируется на хронологически поздних train-узлах):
+`configs/elliptic_gcn_temporal.yaml` (`temporal_val: true`).
+
+## Логирование (Weights & Biases)
+Единая точка — `src.utils.init_wandb`. По умолчанию **выключено**. Включение:
+```bash
+wandb login                                   # один раз (ключ с https://wandb.ai/authorize)
+WANDB_MODE=online python -m src.train --config configs/elliptic_gcn.yaml
+```
+или через конфиг (`wandb.enabled: true`). Логируются `config`, per-epoch
+`loss`/`val/auc_pr`/`val/f1`, финальные `test/*` и PR-кривая как `wandb.Image`.
+Выключить: `wandb.enabled: false` (дефолт) или `WANDB_MODE=offline` (локальный дамп
+в `wandb/`, без аккаунта).
+
 ## Автор
 Ezzenin · eseninaleksandr@gmail.com
