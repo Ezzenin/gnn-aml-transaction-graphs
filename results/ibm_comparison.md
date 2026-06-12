@@ -1,4 +1,4 @@
-# IBM AML HI-Small (test): бейзлайн + ablation Multi-GNN
+# IBM AML HI-Small (test): бейзлайн + ablation Multi-GNN (с norm_time)
 
 Главные метрики: AUC-PR и F1 (позитив = laundering). Ablation: вклад
 адаптаций reverse / port / ego поверх базовой GINe (RQ2).
