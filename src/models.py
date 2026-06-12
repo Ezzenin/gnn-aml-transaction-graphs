@@ -148,6 +148,29 @@ class EdgeGNN(torch.nn.Module):
         )
 
     def forward(self, x, edge_index, edge_attr, edge_label_index):
+        # ── Multi-GNN адаптации (Фаза D), модель-агностично через флаги ──
+        # Порядок: ego (узловая колонка) → port (рёберная колонка) →
+        # reverse (рёберная колонка + удвоение рёбер). Суммарные размерности
+        # совпадают с node_in/edge_in, заданными в __init__.
+        if self.ego_ids:
+            # Пометить два конца классифицируемого сид-ребра (локальные индексы
+            # в подграфе мини-батча известны из edge_label_index).
+            ego = x.new_zeros((x.size(0), 1))
+            ego[edge_label_index.reshape(-1)] = 1.0
+            x = torch.cat([x, ego], dim=1)
+        if self.ports:
+            # Порядковый номер ребра среди входящих в узел-получатель
+            # (различение кратных рёбер мультиграфа); log1p ограничивает диапазон.
+            p = compute_ports(edge_index, x.size(0)).to(edge_attr.dtype)
+            edge_attr = torch.cat([edge_attr, torch.log1p(p).unsqueeze(1)], dim=1)
+        if self.reverse_mp:
+            # Обратные рёбра + бинарный флаг направления (0=прямое, 1=обратное):
+            # сообщения текут в обе стороны, флаг сохраняет различение направления.
+            fwd = torch.cat([edge_attr, edge_attr.new_zeros((edge_attr.size(0), 1))], dim=1)
+            rev = torch.cat([edge_attr, edge_attr.new_ones((edge_attr.size(0), 1))], dim=1)
+            edge_attr = torch.cat([fwd, rev], dim=0)
+            edge_index = torch.cat([edge_index, edge_index.flip(0)], dim=1)
+
         h = self.node_enc(x)
         e = self.edge_enc(edge_attr)
         for conv, bn in zip(self.convs, self.bns):
@@ -192,6 +215,28 @@ def build_model(
     if name == "pna":
         return PNA(in_channels, hidden_channels, out_channels, dropout, deg=deg)
     raise ValueError(f"Неизвестная архитектура: {name!r} (gcn|sage|gat|gin|pna)")
+
+
+def compute_ports(edge_index, num_nodes: int) -> "torch.Tensor":
+    """Порядковый номер ребра среди входящих в его узел-получатель.
+
+    Различает кратные рёбра мультиграфа: параллельные рёбра в один узел
+    получают разные порты 0, 1, 2… Векторно через argsort по dst (стабильный,
+    детерминированный). Возвращает LongTensor [E] на устройстве edge_index.
+    num_nodes не используется (порты локальны для dst), оставлен для единого
+    интерфейса с остальными граф-хелперами.
+    """
+    dst = edge_index[1]
+    if dst.numel() == 0:
+        return dst.new_zeros(0)
+    order = torch.argsort(dst, stable=True)
+    sorted_dst = dst[order]
+    _, counts = torch.unique_consecutive(sorted_dst, return_counts=True)
+    starts = torch.cumsum(counts, 0) - counts
+    within = torch.arange(dst.numel(), device=dst.device) - torch.repeat_interleave(starts, counts)
+    ports = torch.empty_like(dst)
+    ports[order] = within
+    return ports
 
 
 def compute_degree_histogram(edge_index, num_nodes: int) -> "torch.Tensor":

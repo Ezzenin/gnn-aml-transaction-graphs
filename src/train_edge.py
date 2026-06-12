@@ -22,7 +22,7 @@ from torch_geometric.loader import LinkNeighborLoader
 from src.datasets import CANONICAL_PATTERNS, load_ibm_aml
 from src.metrics import evaluate, evaluate_per_group, pr_curve_figure
 from src.models import build_edge_model
-from src.utils import init_wandb, load_config, save_json, set_seed
+from src.utils import init_wandb, load_config, resolve_device, save_json, set_seed
 
 
 def _slim_data(data) -> Data:
@@ -67,7 +67,8 @@ def _eval_edges(model, slim, data, edge_idx, num_neighbors, batch_size, device) 
 def run(config: dict) -> dict:
     seed = int(config.get("seed", 42))
     set_seed(seed)
-    device = torch.device(config.get("device", "cpu"))
+    device = resolve_device(config.get("device", "auto"))
+    print(f"[device] {device}")
 
     ds_cfg = config.get("dataset", {})
     data, meta = load_ibm_aml(

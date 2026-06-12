@@ -1,5 +1,4 @@
-# Фаза D: полный Multi-GNN — GINe + reverse + port + ego (все адаптации вместе).
-# Верхняя точка ablation-сетки; сравнивается с base (ibm_gine) и одиночными.
+# Фаза D ablation: GINe + port numbering (различение кратных рёбер мультиграфа).
 seed: 42
 device: cuda            # на Mac без CUDA автоматически откатится на cpu
 
@@ -15,9 +14,9 @@ model:
     hidden: 64
     num_layers: 2
     dropout: 0.5
-    reverse_mp: true
+    reverse_mp: false
     ports: true
-    ego_ids: true
+    ego_ids: false
 
 train:
   num_neighbors: [10, 10]
@@ -30,7 +29,7 @@ train:
   weight_decay: 0.0005
 
 output_dir: results
-output_name: ibm_multignn
+output_name: ibm_gine_port
 checkpoint_dir: checkpoints
 save_checkpoint: true
 

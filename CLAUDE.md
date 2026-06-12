@@ -18,12 +18,22 @@
   - A: W&B (`src.utils.init_wandb`), per-pattern метрика (`src.metrics.evaluate_per_group`), temporal-val.
   - B: загрузчик IBM AML (`src.datasets.load_ibm_aml`, `parse_ibm_patterns`), мультиграф «узел=счёт, ребро=транзакция», строгий temporal split. Реально: 515k узлов, 5.08M рёбер, illicit 0.10%.
   - C: бейзлайны на IBM — XGBoost на рёбрах (test AUC-PR **0.129**) и базовая edge-GNN GINe (`src.train_edge`, AUC-PR **0.081**).
-- **Фаза D — СЛЕДУЮЩАЯ (ядро, RQ2):** Multi-GNN адаптации (reverse MP / port / ego)
-  + ablation. **Детальная спецификация: `docs/phase_d_plan.md`** — выполнять по ней.
+- **Фаза D — КОД ГОТОВ (написан/проверен на Mac), ждёт обучения на CUDA:**
+  адаптации reverse/port/ego в `EdgeGNN.forward`, `compute_ports`, ablation-конфиги,
+  `compare.py --run-ibm/--ibm`. **На ПК осталось только запустить обучение** —
+  см. блок «Что делать на ПК» в начале `docs/phase_d_plan.md`.
 - Дальше: E (per-pattern + эвристики), G1 (Streamlit антифрод), H (воспроизводимость).
 
+## Гибрид-тактика (Mac ↔ ПК)
+Код, конфиги, сборка артефактов/графиков — на **Mac** (CPU достаточно). На **ПК с
+RTX 3070** выполняется ТОЛЬКО CUDA-тяжёлое обучение GNN. Обмен — через git:
+результаты (`results/*.json`, `*.png`) трекаются и возвращаются `git pull`;
+чекпоинты (`*.pt`) в `.gitignore` — при нужде переносить вручную. На Mac любой
+IBM-конфиг с `device: cuda` сам откатывается на cpu (`resolve_device`), так что
+smoke-прогоны на подвыборке (`dataset.max_rows`) работают и здесь.
+
 ## Железо / окружение
-- Фаза D и далее гонятся **на этом ПК: Ryzen 3700X, RTX 3070 (8GB VRAM, CUDA), 16GB RAM**.
+- CUDA-обучение — **на ПК: Ryzen 3700X, RTX 3070 (8GB VRAM, CUDA), 16GB RAM**.
 - Узкое место — **не GPU, а 16GB RAM**: `load_ibm_aml` читает 475MB CSV через
   pandas `dtype=str` (пик несколько ГБ). Отлаживать на `dataset.max_rows: 300000`,
   финал — на полном датасете; при OOM добавить чанковое чтение CSV.

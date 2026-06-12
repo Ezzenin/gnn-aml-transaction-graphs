@@ -1,8 +1,39 @@
 # Фаза D — Multi-GNN адаптации + ablation (ядро Этапа 2, RQ2)
 
-> Спецификация для выполнения на ПК (RTX 3070, CUDA). Код и обучение Фазы D
-> делаются в сессии Claude Code на этой машине. Начни с раздела 0 (настройка),
-> затем выполняй разделы 1–4 по порядку, сверяясь с Acceptance в разделе 5.
+> ## ⚡ СТАТУС: код готов (написан и проверен на Mac). ПК запускает ТОЛЬКО обучение.
+>
+> Гибрид-тактика: весь код Фазы D реализован и smoke-проверен на Mac (CPU).
+> На ПК с RTX 3070 нужна **только вычислительная мощь CUDA для обучения** — ни
+> писать, ни отлаживать код не требуется. Разделы 1–3 ниже — описание уже
+> сделанного (для понимания). Твоя задача на ПК — **раздел «Что делать на ПК»**.
+>
+> ### Что делать на ПК (3 шага)
+> ```bash
+> git pull                              # подтянуть готовый код Фазы D
+> # данные уже должны лежать в data/ibm_aml/ (HI-Small_Trans.csv, _Patterns.txt)
+> python -c "import torch; print(torch.cuda.is_available())"   # → True
+> python -m src.compare --run-ibm       # XGBoost (если нет) + 5 GNN на CUDA → results/ibm_*
+> git add results/ibm_*.json results/ibm_*_pr_curve.png results/ibm_comparison.* results/ablation.png
+> git commit -m "feat(phase D): результаты ablation Multi-GNN на CUDA"
+> git push
+> ```
+> Дальше сборку финальных артефактов и анализ доделываю я на Mac (`git pull`).
+> Если 16GB RAM упрётся при чтении 475MB CSV — раскомментируй `max_rows` в
+> конфигах `configs/ibm_*.yaml` или см. caveat в разделе 0.
+>
+> ---
+>
+> ### Что уже реализовано на Mac (коммит — см. git log `feat(phase D)`)
+> - `src/models.py`: логика `reverse_mp/ports/ego_ids` в `EdgeGNN.forward` + хелпер `compute_ports`.
+> - `src/utils.py`: `resolve_device` (конфиг `device: cuda` сам откатывается на cpu вне ПК).
+> - `configs/`: `ibm_gine_rev/port/ego.yaml` + заполнен `ibm_multignn.yaml`; base `ibm_gine.yaml` → `device: cuda`.
+> - `src/compare.py`: `--run-ibm` (обучение, ПК) и `--ibm` (сборка таблицы+графика, Mac).
+> - `tests/test_models.py`: `compute_ports` + forward всех адаптаций. `pytest -q` зелёный.
+> - Smoke полного Multi-GNN пути (reverse+port+ego) на подвыборке прошёл на Mac/CPU.
+
+---
+
+## Историческая спецификация (как реализовывалось; раздел 0 — настройка ПК)
 
 ## Context
 

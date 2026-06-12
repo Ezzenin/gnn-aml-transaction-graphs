@@ -47,6 +47,25 @@ def get_device():
     return torch.device("cpu")
 
 
+def resolve_device(requested: Optional[str] = "auto"):
+    """Разрешить устройство из конфига с мягким fallback.
+
+    'auto' → cuda при наличии, иначе cpu (mps пропускаем — детерминизм важнее
+    для отладки). Явный 'cuda' на машине без CUDA откатывается на cpu с
+    предупреждением (один и тот же IBM-конфиг работает и на ПК с CUDA, и на
+    Mac при smoke-прогоне). 'cpu'/'mps' берутся как есть.
+    """
+    import torch
+
+    req = (requested or "auto").lower()
+    if req == "auto":
+        return torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+    if req == "cuda" and not torch.cuda.is_available():
+        print("[device] запрошен cuda, но он недоступен — откат на cpu")
+        return torch.device("cpu")
+    return torch.device(req)
+
+
 def init_wandb(config: dict, run_name: Optional[str] = None):
     """Единая точка инициализации W&B с мягким fallback.
 

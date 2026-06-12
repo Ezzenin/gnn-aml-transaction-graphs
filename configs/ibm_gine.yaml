@@ -1,6 +1,6 @@
 # Бейзлайн C2: базовая edge-GNN (GINe) на IBM AML HI-Small.
 seed: 42
-device: cpu
+device: cuda            # на Mac без CUDA автоматически откатится на cpu
 
 dataset:
   name: ibm_aml
