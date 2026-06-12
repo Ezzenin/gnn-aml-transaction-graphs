@@ -13,9 +13,9 @@
         "hidden": 64,
         "num_layers": 2,
         "dropout": 0.5,
-        "reverse_mp": false,
-        "ports": false,
-        "ego_ids": false
+        "reverse_mp": true,
+        "ports": true,
+        "ego_ids": true
       }
     },
     "train": {
@@ -32,7 +32,7 @@
       "weight_decay": 0.0005
     },
     "output_dir": "results",
-    "output_name": "ibm_gine",
+    "output_name": "ibm_multignn",
     "checkpoint_dir": "checkpoints",
     "save_checkpoint": true,
     "wandb": {
@@ -130,92 +130,92 @@
     }
   },
   "model_type": "gine",
-  "fixed_threshold_from_val": 0.9527000784873962,
+  "fixed_threshold_from_val": 0.9082002639770508,
   "val_metrics": {
-    "auc_pr": 0.03537606153921828,
-    "roc_auc": 0.8686637623907659,
-    "f1": 0.12099644128113879,
-    "precision": 0.08968347010550996,
-    "recall": 0.1859052247873633,
+    "auc_pr": 0.02301791529324353,
+    "roc_auc": 0.8166376831469566,
+    "f1": 0.09940828402366864,
+    "precision": 0.09688581314878893,
+    "recall": 0.10206561360874848,
     "recall_at_precision_90": 0.0,
     "n_pos": 823,
     "n_neg": 760759,
-    "threshold": 0.9527000784873962
+    "threshold": 0.9082002639770508
   },
   "test_metrics": {
-    "auc_pr": 0.049173559945445575,
-    "roc_auc": 0.8646024787340041,
-    "f1": 0.1344178082191781,
-    "precision": 0.10925539318023661,
-    "recall": 0.1746384872080089,
+    "auc_pr": 0.016024006127304643,
+    "roc_auc": 0.788035070737811,
+    "f1": 0.06275740341243381,
+    "precision": 0.04847016055740685,
+    "recall": 0.08898776418242492,
     "recall_at_precision_90": 0.0,
     "n_pos": 1798,
     "n_neg": 1014084,
-    "threshold": 0.9527000784873962
+    "threshold": 0.9082002639770508
   },
   "per_pattern": {
     "fan_out": {
-      "f1": 0.03278688524590164,
-      "precision": 0.01727447216890595,
-      "recall": 0.32142857142857145,
+      "f1": 0.015124016938898971,
+      "precision": 0.007896399241945672,
+      "recall": 0.17857142857142858,
       "n_pos": 140,
-      "n_detected": 45
+      "n_detected": 25
     },
     "fan_in": {
-      "f1": 0.0066518847006651885,
-      "precision": 0.0035033086804203972,
-      "recall": 0.06569343065693431,
+      "f1": 0.0,
+      "precision": 0.0,
+      "recall": 0.0,
       "n_pos": 137,
-      "n_detected": 9
+      "n_detected": 0
     },
     "gather_scatter": {
-      "f1": 0.06026858827382902,
-      "precision": 0.03469079939668175,
-      "recall": 0.22942643391521197,
+      "f1": 0.028388533259114945,
+      "precision": 0.015977443609022556,
+      "recall": 0.12718204488778054,
       "n_pos": 401,
-      "n_detected": 92
+      "n_detected": 51
     },
     "scatter_gather": {
-      "f1": 0.02943237561317449,
-      "precision": 0.01614142966948501,
-      "recall": 0.16666666666666666,
+      "f1": 0.0023550191345304682,
+      "precision": 0.0012718600953895071,
+      "recall": 0.015873015873015872,
       "n_pos": 252,
-      "n_detected": 42
+      "n_detected": 4
     },
     "cycle": {
-      "f1": 0.014875418371141688,
-      "precision": 0.007751937984496124,
-      "recall": 0.1834862385321101,
+      "f1": 0.004298434141848327,
+      "precision": 0.0022236340533672173,
+      "recall": 0.06422018348623854,
       "n_pos": 109,
-      "n_detected": 20
+      "n_detected": 7
     },
     "random": {
-      "f1": 0.011273957158962795,
-      "precision": 0.005825242718446602,
-      "recall": 0.1744186046511628,
+      "f1": 0.0037117228580266005,
+      "precision": 0.0019065776930409914,
+      "recall": 0.06976744186046512,
       "n_pos": 86,
-      "n_detected": 15
+      "n_detected": 6
     },
     "bipartite": {
-      "f1": 0.00681044267877412,
-      "precision": 0.0035033086804203972,
-      "recall": 0.12162162162162163,
+      "f1": 0.004345127250155183,
+      "precision": 0.0022236340533672173,
+      "recall": 0.0945945945945946,
       "n_pos": 74,
-      "n_detected": 9
+      "n_detected": 7
     },
     "stack": {
-      "f1": 0.02342606149341142,
-      "precision": 0.012345679012345678,
-      "recall": 0.22857142857142856,
+      "f1": 0.012117540139351712,
+      "precision": 0.006327111673521037,
+      "recall": 0.14285714285714285,
       "n_pos": 140,
-      "n_detected": 32
+      "n_detected": 20
     },
     "unknown": {
-      "f1": 0.03258390355164549,
-      "precision": 0.019157088122605363,
-      "recall": 0.10893246187363835,
+      "f1": 0.02197802197802198,
+      "precision": 0.012574662055957246,
+      "recall": 0.08714596949891068,
       "n_pos": 459,
-      "n_detected": 50
+      "n_detected": 40
     }
   }
 }
