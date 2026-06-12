@@ -7,16 +7,32 @@
 > писать, ни отлаживать код не требуется. Разделы 1–3 ниже — описание уже
 > сделанного (для понимания). Твоя задача на ПК — **раздел «Что делать на ПК»**.
 >
-> ### Что делать на ПК (3 шага)
+> ### Что делать на ПК
 > ```bash
 > git pull                              # подтянуть готовый код Фазы D
-> # данные уже должны лежать в data/ibm_aml/ (HI-Small_Trans.csv, _Patterns.txt)
 > python -c "import torch; print(torch.cuda.is_available())"   # → True
 > python -m src.compare --run-ibm       # XGBoost (если нет) + 5 GNN на CUDA → results/ibm_*
-> git add results/ibm_*.json results/ibm_*_pr_curve.png results/ibm_comparison.* results/ablation.png
+> git add results/ibm_*.json results/ibm_*_pr_curve.png results/ibm_comparison.md results/ablation.png
 > git commit -m "feat(phase D): результаты ablation Multi-GNN на CUDA"
 > git push
 > ```
+>
+> ### ⚠️ ОБНОВЛЕНИЕ (фикс reverse MP)
+> Первый прогон дал аномалию: reverse MP проседал втрое (обратно выводу Egressy).
+> Причина — обратные рёбра добавлялись ПОСЛЕ семплинга loader'ом, окрестность не
+> была настоящей двунаправленной. **Исправлено:** reverse теперь применяется к
+> графу ДО семплинга (`add_reverse_edges` в `models.py`, вызывается в `train_edge`).
+> Семантически изменились ТОЛЬКО варианты с reverse — перепрогнать **2 конфига**
+> (остальные результаты валидны):
+> ```bash
+> git pull
+> python -m src.train_edge --config configs/ibm_gine_rev.yaml
+> python -m src.train_edge --config configs/ibm_multignn.yaml
+> git add results/ibm_gine_rev_metrics.json results/ibm_gine_rev_pr_curve.png \
+>         results/ibm_multignn_metrics.json results/ibm_multignn_pr_curve.png
+> git commit -m "fix(phase D): перепрогон reverse-вариантов после фикса reverse MP" && git push
+> ```
+> Сводку/график (`--ibm`) и анализ доделываю на Mac.
 > Дальше сборку финальных артефактов и анализ доделываю я на Mac (`git pull`).
 > Если 16GB RAM упрётся при чтении 475MB CSV — раскомментируй `max_rows` в
 > конфигах `configs/ibm_*.yaml` или см. caveat в разделе 0.

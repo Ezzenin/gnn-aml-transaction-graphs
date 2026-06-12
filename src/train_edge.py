@@ -102,13 +102,25 @@ def run(config: dict) -> dict:
 
     model_cfg = config.get("model", {})
     m_params = model_cfg.get("params", {})
+    reverse_mp = bool(m_params.get("reverse_mp", False))
+
+    # reverse MP — на уровне ДАННЫХ: обратные рёбра + флаг направления в граф ДО
+    # семплинга, чтобы окрестность сид-ребра была честно двунаправленной.
+    if reverse_mp:
+        from src.models import add_reverse_edges
+
+        slim.edge_index, slim.edge_attr = add_reverse_edges(slim.edge_index, slim.edge_attr)
+        print(f"[reverse_mp] граф → двунаправленный: {slim.edge_index.shape[1]:,} рёбер, "
+              f"edge_attr {slim.edge_attr.shape[1]} фич (+флаг направления)")
+    in_edge_eff = slim.edge_attr.shape[1]
+
     model = build_edge_model(
         model_cfg.get("type", "gine"),
-        in_node=data.x.shape[1], in_edge=data.edge_attr.shape[1],
+        in_node=data.x.shape[1], in_edge=in_edge_eff,
         hidden=int(m_params.get("hidden", 64)),
         num_layers=int(m_params.get("num_layers", 2)),
         dropout=float(m_params.get("dropout", 0.5)),
-        reverse_mp=bool(m_params.get("reverse_mp", False)),
+        reverse_mp=reverse_mp,
         ports=bool(m_params.get("ports", False)),
         ego_ids=bool(m_params.get("ego_ids", False)),
     ).to(device)
@@ -195,7 +207,7 @@ def run(config: dict) -> dict:
         os.makedirs(ckpt_dir, exist_ok=True)
         ckpt = os.path.join(ckpt_dir, f"{name}.pt")
         torch.save({"state_dict": model.state_dict(), "config": config,
-                    "in_node": data.x.shape[1], "in_edge": data.edge_attr.shape[1],
+                    "in_node": data.x.shape[1], "in_edge": in_edge_eff,
                     "threshold": threshold}, ckpt)
         print(f"[saved] {ckpt}")
 
