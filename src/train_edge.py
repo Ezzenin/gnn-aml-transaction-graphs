@@ -75,7 +75,7 @@ def _eval_edges(model, ctx, data, edge_idx, num_neighbors, batch_size, device) -
     with torch.no_grad():
         for batch in loader:
             batch = batch.to(device)
-            ela = seed_attr[batch.input_id].to(device)
+            ela = seed_attr[batch.input_id.cpu()].to(device)
             out = model(batch.x, batch.edge_index, batch.edge_attr, batch.edge_label_index, ela)
             ss.append(F.softmax(out, dim=1)[:, 1].cpu().numpy())
             ys.append(batch.edge_label.cpu().numpy())
@@ -169,7 +169,7 @@ def run(config: dict) -> dict:
         for batch in train_loader:
             batch = batch.to(device)
             optimizer.zero_grad()
-            ela = seed_attr_train[batch.input_id].to(device)  # признаки сид-ребра (P0.2)
+            ela = seed_attr_train[batch.input_id.cpu()].to(device)  # признаки сид-ребра (P0.2)
             out = model(batch.x, batch.edge_index, batch.edge_attr, batch.edge_label_index, ela)
             loss = F.cross_entropy(out, batch.edge_label.long(), weight=class_weight)
             loss.backward()
