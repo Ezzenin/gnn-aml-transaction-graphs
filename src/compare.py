@@ -40,6 +40,7 @@ IBM_GNN_CONFIGS = [
     "configs/ibm_multignn.yaml",    # full (reverse + port + ego)
 ]
 # (output_name, человекочитаемый ярлык) — порядок строк сводки/графика.
+# Два режима признаков (P1.6): с norm_time и без (time при temporal split вредит).
 IBM_VARIANTS = [
     ("ibm_xgboost", "XGBoost"),
     ("ibm_gine", "GINe (base)"),
@@ -47,6 +48,14 @@ IBM_VARIANTS = [
     ("ibm_gine_port", "+port"),
     ("ibm_gine_ego", "+ego"),
     ("ibm_multignn", "Multi-GNN (full)"),
+]
+IBM_VARIANTS_NOTIME = [
+    ("ibm_xgboost_notime", "XGBoost"),
+    ("ibm_gine_notime", "GINe (base)"),
+    ("ibm_gine_rev_notime", "+reverse"),
+    ("ibm_gine_port_notime", "+port"),
+    ("ibm_gine_ego_notime", "+ego"),
+    ("ibm_multignn_notime", "Multi-GNN (full)"),
 ]
 IBM_METRIC_KEYS = ["auc_pr", "f1", "recall_at_precision_90", "recall"]
 BASE_LABEL = "GINe (base)"
@@ -178,10 +187,10 @@ def run_ibm() -> None:
         run_edge(load_config(cfg_path))
 
 
-def collect_ibm(results_dir: str = "results") -> list[dict]:
-    """Собрать test-метрики IBM-вариантов в порядке IBM_VARIANTS (пропуская отсутствующие)."""
+def collect_ibm(results_dir: str = "results", variants=IBM_VARIANTS) -> list[dict]:
+    """Собрать test-метрики IBM-вариантов в заданном порядке (пропуская отсутствующие)."""
     rows = []
-    for name, label in IBM_VARIANTS:
+    for name, label in variants:
         path = os.path.join(results_dir, f"{name}_metrics.json")
         if not os.path.exists(path):
             continue
@@ -194,13 +203,14 @@ def collect_ibm(results_dir: str = "results") -> list[dict]:
     return rows
 
 
-def write_ibm_table(rows: list[dict], results_dir: str = "results") -> None:
+def write_ibm_table(rows: list[dict], results_dir: str = "results",
+                    name: str = "ibm_comparison", regime: str = "") -> None:
     """Сводная таблица IBM (CSV + Markdown): XGBoost vs base GNN vs +адаптации."""
     import csv
 
     cols = ["variant"] + IBM_METRIC_KEYS
-    csv_path = os.path.join(results_dir, "ibm_comparison.csv")
-    md_path = os.path.join(results_dir, "ibm_comparison.md")
+    csv_path = os.path.join(results_dir, f"{name}.csv")
+    md_path = os.path.join(results_dir, f"{name}.md")
 
     with open(csv_path, "w", newline="", encoding="utf-8") as f:
         w = csv.DictWriter(f, fieldnames=cols, extrasaction="ignore")
@@ -215,7 +225,7 @@ def write_ibm_table(rows: list[dict], results_dir: str = "results") -> None:
     lines = [header, sep]
     for r in rows:
         lines.append("| " + " | ".join([str(r["variant"])] + [fmt(r.get(k)) for k in IBM_METRIC_KEYS]) + " |")
-    md = ("# IBM AML HI-Small (test): бейзлайн + ablation Multi-GNN\n\n"
+    md = (f"# IBM AML HI-Small (test): бейзлайн + ablation Multi-GNN{regime}\n\n"
           "Главные метрики: AUC-PR и F1 (позитив = laundering). Ablation: вклад\n"
           "адаптаций reverse / port / ego поверх базовой GINe (RQ2).\n\n"
           + "\n".join(lines) + "\n")
@@ -226,7 +236,8 @@ def write_ibm_table(rows: list[dict], results_dir: str = "results") -> None:
     print(f"\n[saved] {csv_path}\n[saved] {md_path}")
 
 
-def plot_ablation(rows: list[dict], results_dir: str = "results") -> None:
+def plot_ablation(rows: list[dict], results_dir: str = "results",
+                  out_name: str = "ablation", regime: str = "") -> None:
     """Bar-chart ablation: F1 и AUC-PR по GNN-вариантам + пунктир уровня base.
 
     Показывает вклад каждой адаптации относительно базовой GINe (главный график
@@ -272,10 +283,10 @@ def plot_ablation(rows: list[dict], results_dir: str = "results") -> None:
     ax.set_xticks(x)
     ax.set_xticklabels(variants, rotation=15, ha="right")
     ax.set_ylabel("score")
-    ax.set_title("IBM AML: ablation мультиграфовых адаптаций (пунктир = base GINe)")
+    ax.set_title(f"IBM AML: ablation мультиграфовых адаптаций{regime} (пунктир = base GINe)")
     ax.legend(fontsize=8)
     fig.tight_layout()
-    out = os.path.join(results_dir, "ablation.png")
+    out = os.path.join(results_dir, f"{out_name}.png")
     fig.savefig(out, dpi=150)
     plt.close(fig)
     print(f"[saved] {out}")
@@ -393,13 +404,21 @@ def summarize_per_pattern(results_dir: str = "results") -> None:
 
 
 def summarize_ibm(results_dir: str = "results") -> None:
-    """Собрать IBM-сводку: ablation (таблица+график) + per-pattern из готовых results/."""
-    rows = collect_ibm(results_dir)
+    """Собрать IBM-сводку: ablation (с временем и без) + per-pattern из готовых results/."""
+    rows = collect_ibm(results_dir, IBM_VARIANTS)
     if not rows:
         print("Нет IBM-результатов в", results_dir, "(прогони --run-ibm на ПК с CUDA)")
         return
-    write_ibm_table(rows, results_dir)
-    plot_ablation(rows, results_dir)
+    write_ibm_table(rows, results_dir, name="ibm_comparison", regime=" (с norm_time)")
+    plot_ablation(rows, results_dir, out_name="ablation", regime=" (с временем)")
+
+    # Режим без norm_time (P1.6) — если перепрогнан.
+    rows_nt = collect_ibm(results_dir, IBM_VARIANTS_NOTIME)
+    if len([r for r in rows_nt if r["variant"] != "XGBoost"]) >= 2:
+        print("\n=== режим без norm_time ===")
+        write_ibm_table(rows_nt, results_dir, name="ibm_comparison_notime", regime=" (без norm_time)")
+        plot_ablation(rows_nt, results_dir, out_name="ablation_notime", regime=" (без времени)")
+
     summarize_per_pattern(results_dir)
 
 
