@@ -17,6 +17,25 @@
 > git push
 > ```
 >
+> ### ⚠️ ОБНОВЛЕНИЕ 3 (full-data эксперимент — литература)
+> docs/lit_benchmarks.md: вероятная ГЛАВНАЯ причина разрыва с Egressy (их GIN
+> base F1=28.7 vs наш ~0.04) — мы учим на сабсэмпле негативов (neg_ratio=20),
+> они на ВСЕХ train-рёбрах с class weights. Добавлен флаг `train.full_data: true`
+> (pos_weight = neg/pos авто). Прогнать ablation в режиме full-data (no-time):
+> ```bash
+> git pull
+> # МИНИМУМ — ключевой контраст base vs full (дешевле; ~60× больше сид-рёбер/эпоху):
+> python -m src.train_edge --config configs/ibm_gine_fulldata.yaml
+> python -m src.train_edge --config configs/ibm_multignn_fulldata.yaml
+> # ПОЛНЫЙ ablation (если время позволяет): + rev/port/ego_fulldata
+> git add results/ibm_*fulldata*_metrics.json results/ibm_*fulldata*_pr_curve.png
+> git commit -m "feat: full-data ablation (обучение на всех train-рёбрах)" && git push
+> ```
+> Если обучение нестабильно (loss взрывается из-за pos_weight ~1270) — понизить
+> `train.pos_weight` в конфиге (напр. 50–100). Сводку (`ibm_comparison_fulldata.md`,
+> `ablation_fulldata.png`) собираю на Mac. Цель: проверить, переносится ли вывод
+> Egressy (адаптации помогают) при полноценном обучении.
+>
 > ### ⚠️ ОБНОВЛЕНИЕ 2 (аудит-фиксы P0/P1 — нужен перепрогон GNN)
 > Аудит выявил две P0-проблемы (исправлены в коде на Mac, smoke-проверено):
 > - **P0.2 edge-head**: голова теперь `[h_u‖h_v‖e_label]` — использует признаки

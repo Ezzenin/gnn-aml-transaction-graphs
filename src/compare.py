@@ -57,6 +57,14 @@ IBM_VARIANTS_NOTIME = [
     ("ibm_gine_ego_notime", "+ego"),
     ("ibm_multignn_notime", "Multi-GNN (full)"),
 ]
+IBM_VARIANTS_FULLDATA = [
+    ("ibm_xgboost_notime", "XGBoost"),
+    ("ibm_gine_fulldata", "GINe (base)"),
+    ("ibm_gine_rev_fulldata", "+reverse"),
+    ("ibm_gine_port_fulldata", "+port"),
+    ("ibm_gine_ego_fulldata", "+ego"),
+    ("ibm_multignn_fulldata", "Multi-GNN (full)"),
+]
 IBM_METRIC_KEYS = ["auc_pr", "f1", "recall_at_precision_90", "recall"]
 BASE_LABEL = "GINe (base)"
 GNN_ORDER = [BASE_LABEL, "+reverse", "+port", "+ego", "Multi-GNN (full)"]
@@ -418,6 +426,13 @@ def summarize_ibm(results_dir: str = "results") -> None:
         print("\n=== режим без norm_time ===")
         write_ibm_table(rows_nt, results_dir, name="ibm_comparison_notime", regime=" (без norm_time)")
         plot_ablation(rows_nt, results_dir, out_name="ablation_notime", regime=" (без времени)")
+
+    # Режим full-data обучения (no-time + все train-рёбра) — если перепрогнан.
+    rows_fd = collect_ibm(results_dir, IBM_VARIANTS_FULLDATA)
+    if len([r for r in rows_fd if r["variant"] != "XGBoost"]) >= 2:
+        print("\n=== режим full-data (no-time + все train-рёбра) ===")
+        write_ibm_table(rows_fd, results_dir, name="ibm_comparison_fulldata", regime=" (full-data, no-time)")
+        plot_ablation(rows_fd, results_dir, out_name="ablation_fulldata", regime=" (full-data)")
 
     summarize_per_pattern(results_dir)
 

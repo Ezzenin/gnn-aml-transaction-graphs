@@ -105,9 +105,23 @@ def run(config: dict) -> dict:
     epochs = int(t_cfg.get("epochs", 15))
     patience = int(t_cfg.get("patience", 5))
 
-    train_idx = _balanced_train_edges(label, data.train_mask.numpy(), neg_ratio, seed)
-    print(f"[data] IBM {meta['variant']}: illicit={meta['n_illicit']} ({meta['illicit_rate']*100:.3f}%)")
-    print(f"[train] сид-рёбер {len(train_idx):,} (pos={int(label[train_idx].sum())}); "
+    # Режим обучения: сабсэмпл негативов (neg_ratio) ИЛИ все train-рёбра
+    # (full_data, как у Egressy — литература: вероятно главный фактор разрыва).
+    full_data = bool(t_cfg.get("full_data", False))
+    tr_all = np.flatnonzero(data.train_mask.numpy())
+    if full_data:
+        train_idx = tr_all.copy()
+        np.random.default_rng(seed).shuffle(train_idx)
+        n_pos = int(label[tr_all].sum())
+        pos_w = float(t_cfg.get("pos_weight", (len(tr_all) - n_pos) / max(n_pos, 1)))
+        print(f"[train] FULL-DATA: все {len(train_idx):,} train-рёбер (pos={n_pos}), "
+              f"pos_weight={pos_w:.1f}")
+    else:
+        train_idx = _balanced_train_edges(label, data.train_mask.numpy(), neg_ratio, seed)
+        pos_w = float(t_cfg.get("pos_weight", neg_ratio))
+        print(f"[train] сид-рёбер {len(train_idx):,} (pos={int(label[train_idx].sum())}); "
+              f"neg_ratio={neg_ratio}, pos_weight={pos_w:.1f}")
+    print(f"[data] IBM {meta['variant']}: illicit={meta['n_illicit']} ({meta['illicit_rate']*100:.3f}%); "
           f"num_neighbors={num_neighbors}, batch={batch_size}")
 
     # Подвыборка val для ранней остановки (все позитивы + ограниченные негативы).
@@ -156,8 +170,7 @@ def run(config: dict) -> dict:
     )
     optimizer = torch.optim.Adam(model.parameters(), lr=float(t_cfg.get("lr", 0.005)),
                                  weight_decay=float(t_cfg.get("weight_decay", 5e-4)))
-    # Вес позитива в лоссе (внутри сбалансированного набора всё ещё есть перекос).
-    pos_w = neg_ratio
+    # Вес позитива в лоссе (pos_w задан выше по режиму обучения).
     class_weight = torch.tensor([1.0, float(pos_w)], device=device)
 
     wb = init_wandb(config, run_name=config.get("output_name", "ibm_gine"))
