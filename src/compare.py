@@ -52,6 +52,18 @@ IBM_METRIC_KEYS = ["auc_pr", "f1", "recall_at_precision_90", "recall"]
 BASE_LABEL = "GINe (base)"
 GNN_ORDER = [BASE_LABEL, "+reverse", "+port", "+ego", "Multi-GNN (full)"]
 
+# Per-pattern (RQ3): три семейства + эвристики (4-е, если посчитаны). 8 паттернов.
+CANONICAL_PATTERNS = [
+    "fan_out", "fan_in", "gather_scatter", "scatter_gather",
+    "cycle", "random", "bipartite", "stack",
+]
+PER_PATTERN_FAMILIES = [
+    ("ibm_xgboost", "XGBoost"),
+    ("ibm_gine", "GINe (base)"),
+    ("ibm_multignn", "Multi-GNN"),
+    ("ibm_heuristics", "Эвристики"),
+]
+
 
 def run_all() -> None:
     """Прогнать все бейзлайны и GNN по их конфигам."""
@@ -264,14 +276,116 @@ def plot_ablation(rows: list[dict], results_dir: str = "results") -> None:
     print(f"[saved] {out}")
 
 
+# ───────────────────── Per-pattern разбивка (RQ3, Фаза E) ─────────────────────
+def collect_per_pattern(results_dir: str = "results") -> tuple[list[str], dict]:
+    """Собрать per_pattern.f1 по семействам из results/ibm_*_metrics.json.
+
+    Возвращает (labels, data): labels — порядок семейств (только присутствующие),
+    data[label][pattern] = f1 (+ data[label]['__npos__'][pattern] = n_pos).
+    """
+    labels: list[str] = []
+    data: dict = {}
+    for name, label in PER_PATTERN_FAMILIES:
+        path = os.path.join(results_dir, f"{name}_metrics.json")
+        if not os.path.exists(path):
+            continue
+        with open(path, "r", encoding="utf-8") as f:
+            pp = json.load(f).get("per_pattern", {})
+        if not pp:
+            continue
+        labels.append(label)
+        data[label] = {p: (pp.get(p, {}) or {}).get("f1", 0.0) for p in CANONICAL_PATTERNS}
+        data[label]["__npos__"] = {p: (pp.get(p, {}) or {}).get("n_pos", 0) for p in CANONICAL_PATTERNS}
+    return labels, data
+
+
+def write_per_pattern_table(labels: list[str], data: dict, results_dir: str = "results") -> None:
+    """Таблица F1 × 8 паттернов × семейства (Markdown + CSV) с пометкой лучшего."""
+    import csv
+
+    md_path = os.path.join(results_dir, "per_pattern.md")
+    csv_path = os.path.join(results_dir, "per_pattern.csv")
+    npos = data[labels[0]]["__npos__"] if labels else {}
+
+    cols = ["pattern", "n_pos"] + labels
+    with open(csv_path, "w", newline="", encoding="utf-8") as f:
+        w = csv.writer(f)
+        w.writerow(cols)
+        for p in CANONICAL_PATTERNS:
+            w.writerow([p, npos.get(p, 0)] + [f"{data[l][p]:.4f}" for l in labels])
+
+    header = "| " + " | ".join(cols) + " |"
+    sep = "|" + "|".join(["---"] * len(cols)) + "|"
+    lines = [header, sep]
+    for p in CANONICAL_PATTERNS:
+        vals = {l: data[l][p] for l in labels}
+        best = max(vals, key=vals.get) if vals else None
+        cells = []
+        for l in labels:
+            v = vals[l]
+            cells.append(f"**{v:.3f}**" if l == best and v > 0 else f"{v:.3f}")
+        lines.append("| " + " | ".join([p, str(npos.get(p, 0))] + cells) + " |")
+    md = ("# IBM AML: F1 по 8 паттернам отмывания (test, RQ3)\n\n"
+          "Жирным — лучшее семейство для паттерна. n_pos — число позитивов этого\n"
+          "типа в test. Фактический итог: XGBoost лидирует на ВСЕХ паттернах (вкл.\n"
+          "структурные cycle/scatter_gather, где ожидался перевес GNN); GNN-семейства\n"
+          "следом, reverse-адаптации тянут Multi-GNN вниз; степенные эвристики\n"
+          "не дискриминативны (illicit-счета НИЖЕ по степени, чем легитимные —\n"
+          "отмывание через низкостепенных «мулов», не хабы).\n\n"
+          + "\n".join(lines) + "\n")
+    with open(md_path, "w", encoding="utf-8") as f:
+        f.write(md)
+    print("\n" + "\n".join(lines))
+    print(f"\n[saved] {csv_path}\n[saved] {md_path}")
+
+
+def plot_per_pattern(labels: list[str], data: dict, results_dir: str = "results") -> None:
+    """Сгруппированный bar-chart F1 по паттернам (группы = семейства моделей)."""
+    import matplotlib
+
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    import numpy as np
+
+    colors = ["#000000", "#4c72b0", "#c44e52", "#55a868", "#8172b3"]
+    x = np.arange(len(CANONICAL_PATTERNS))
+    n = len(labels)
+    width = 0.8 / max(n, 1)
+    fig, ax = plt.subplots(figsize=(11, 4.8))
+    for i, l in enumerate(labels):
+        vals = [data[l][p] for p in CANONICAL_PATTERNS]
+        ax.bar(x + (i - (n - 1) / 2) * width, vals, width, label=l, color=colors[i % len(colors)])
+    ax.set_xticks(x)
+    ax.set_xticklabels(CANONICAL_PATTERNS, rotation=20, ha="right")
+    ax.set_ylabel("F1 (позитив = laundering)")
+    ax.set_title("IBM AML: F1 по 8 паттернам — сравнение семейств (RQ3)")
+    ax.legend(fontsize=8)
+    fig.tight_layout()
+    out = os.path.join(results_dir, "per_pattern.png")
+    fig.savefig(out, dpi=150)
+    plt.close(fig)
+    print(f"[saved] {out}")
+
+
+def summarize_per_pattern(results_dir: str = "results") -> None:
+    """Per-pattern сводка (таблица + график) из готовых results/."""
+    labels, data = collect_per_pattern(results_dir)
+    if not labels:
+        print("Нет per_pattern данных в", results_dir)
+        return
+    write_per_pattern_table(labels, data, results_dir)
+    plot_per_pattern(labels, data, results_dir)
+
+
 def summarize_ibm(results_dir: str = "results") -> None:
-    """Собрать IBM-сводку: таблица + ablation-график из готовых results/."""
+    """Собрать IBM-сводку: ablation (таблица+график) + per-pattern из готовых results/."""
     rows = collect_ibm(results_dir)
     if not rows:
         print("Нет IBM-результатов в", results_dir, "(прогони --run-ibm на ПК с CUDA)")
         return
     write_ibm_table(rows, results_dir)
     plot_ablation(rows, results_dir)
+    summarize_per_pattern(results_dir)
 
 
 def main() -> None:
