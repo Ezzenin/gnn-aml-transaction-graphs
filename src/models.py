@@ -118,17 +118,23 @@ class EdgeGNN(torch.nn.Module):
     """Message-passing с учётом edge_attr + голова edge-классификации (GINe-база).
 
     Кодировщики узлов/рёбер → стек GINEConv (учитывает edge_attr) → голова
-    MLP([h_u || h_v]) -> 2 логита для каждого классифицируемого ребра
-    (edge_label_index). Адаптации Фазы D:
+    MLP([h_u || h_v || e_label]) -> 2 логита для каждого классифицируемого ребра.
+    Голова получает И контекст двух счетов (h_u, h_v), И признаки САМОЙ
+    классифицируемой транзакции (amount/currency/format/time) через отдельный
+    label_edge_enc — иначе модель судит о ребре только по контексту аккаунтов
+    (как было до фикса P0.2), что нечестно против табличного XGBoost.
+    Адаптации Фазы D:
       - ego_ids / ports — батч-уровневые (в forward), т.к. зависят от подграфа
         мини-батча (сид-ребро и кратность рёбер в выборке);
       - reverse_mp — на уровне ДАННЫХ (add_reverse_edges применяется к графу
         ДО семплинга loader'ом, см. train_edge), поэтому здесь reverse_mp лишь
         информативный флаг: направленческий столбец уже приходит внутри in_edge.
+    in_edge_label — размерность СЫРЫХ признаков сид-ребра (без reverse/port
+    флагов); по умолчанию = in_edge.
     """
 
     def __init__(self, in_node, in_edge, hidden=64, num_layers=2, dropout=0.5,
-                 reverse_mp=False, ports=False, ego_ids=False):
+                 reverse_mp=False, ports=False, ego_ids=False, in_edge_label=None):
         super().__init__()
         self.reverse_mp = reverse_mp  # обрабатывается на уровне данных (train_edge)
         self.ports = ports
@@ -140,6 +146,8 @@ class EdgeGNN(torch.nn.Module):
         edge_in = in_edge + (1 if ports else 0)
         self.node_enc = Linear(node_in, hidden)
         self.edge_enc = Linear(edge_in, hidden)
+        # Кодировщик признаков самого классифицируемого ребра (для головы).
+        self.label_edge_enc = Linear(in_edge_label if in_edge_label is not None else in_edge, hidden)
 
         self.convs = torch.nn.ModuleList()
         self.bns = torch.nn.ModuleList()
@@ -148,11 +156,11 @@ class EdgeGNN(torch.nn.Module):
             self.bns.append(BatchNorm1d(hidden))
 
         self.head = Sequential(
-            Linear(2 * hidden, hidden), ReLU(),
+            Linear(3 * hidden, hidden), ReLU(),
             torch.nn.Dropout(dropout), Linear(hidden, 2),
         )
 
-    def forward(self, x, edge_index, edge_attr, edge_label_index):
+    def forward(self, x, edge_index, edge_attr, edge_label_index, edge_label_attr):
         # ── Батч-уровневые адаптации (Фаза D): ego → port ──
         # (reverse MP применяется к графу на уровне данных, до loader'а.)
         if self.ego_ids:
@@ -174,18 +182,20 @@ class EdgeGNN(torch.nn.Module):
             h = F.dropout(h, p=self.dropout, training=self.training)
         h_u = h[edge_label_index[0]]
         h_v = h[edge_label_index[1]]
-        return self.head(torch.cat([h_u, h_v], dim=-1))
+        e_label = self.label_edge_enc(edge_label_attr)  # признаки самой транзакции
+        return self.head(torch.cat([h_u, h_v, e_label], dim=-1))
 
 
 def build_edge_model(name: str, in_node: int, in_edge: int, hidden: int = 64,
                      num_layers: int = 2, dropout: float = 0.5,
                      reverse_mp: bool = False, ports: bool = False,
-                     ego_ids: bool = False) -> torch.nn.Module:
+                     ego_ids: bool = False, in_edge_label: Optional[int] = None) -> torch.nn.Module:
     """Фабрика edge-моделей. name='gine' (C2); адаптации — флагами (Фаза D)."""
     name = name.lower()
     if name in ("gine", "gin", "edgegnn"):
         return EdgeGNN(in_node, in_edge, hidden, num_layers, dropout,
-                       reverse_mp=reverse_mp, ports=ports, ego_ids=ego_ids)
+                       reverse_mp=reverse_mp, ports=ports, ego_ids=ego_ids,
+                       in_edge_label=in_edge_label)
     raise ValueError(f"Неизвестная edge-архитектура: {name!r} (gine)")
 
 

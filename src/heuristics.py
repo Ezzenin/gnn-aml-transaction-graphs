@@ -52,16 +52,22 @@ def reciprocity_flag(edge_index: np.ndarray, num_nodes: int) -> np.ndarray:
     return np.isin(rev_keys, keys).astype(np.float64)
 
 
-def heuristic_scores(edge_index: np.ndarray, num_nodes: int) -> np.ndarray:
+def heuristic_scores(edge_index: np.ndarray, num_nodes: int,
+                     context_edge_index: "np.ndarray | None" = None) -> np.ndarray:
     """Комбинированная оценка подозрительности на ребро — степенные детекторы.
 
     Сумма нормированных log-степеней отправителя (fan-out) и получателя (fan-in):
     классический AML-сигнал «счёт-хаб». Реципрокность (2-cycle) НЕ включена — в
     этих данных она почти константна (~70% рёбер имеют обратное), т.е. не
-    дискриминативна; оставлена отдельной утилитой reciprocity_flag. Абсолютный
-    масштаб неважен — порог подбирается по val. Возвращает score [E].
+    дискриминативна; оставлена отдельной утилитой reciprocity_flag.
+
+    P1.5 (антиутечка): степени считаются по context_edge_index (по умолчанию —
+    train-рёбра), а применяются к src/dst ВСЕХ оцениваемых рёбер — как и узловые
+    признаки в load_ibm_aml (train-only). Абсолютный масштаб неважен — порог
+    подбирается по val. Возвращает score [E].
     """
-    in_deg, out_deg = degree_arrays(edge_index, num_nodes)
+    ctx = edge_index if context_edge_index is None else context_edge_index
+    in_deg, out_deg = degree_arrays(ctx, num_nodes)
     src, dst = edge_index[0], edge_index[1]
     fan_out = np.log1p(out_deg[src])   # отправитель «вещает» многим
     fan_in = np.log1p(in_deg[dst])     # получатель «собирает» со многих
@@ -98,7 +104,9 @@ def run(root: str = "data/ibm_aml", variant: str = "HI-Small", max_rows=None,
 
     print(f"[heuristics] IBM {variant}: {edge_index.shape[1]:,} рёбер, "
           f"illicit={meta['n_illicit']} ({meta['illicit_rate']*100:.3f}%)")
-    score = heuristic_scores(edge_index, num_nodes)
+    # Степени — по train-контексту (антиутечка, P1.5).
+    train_ctx_ei = edge_index[:, data.train_mask.numpy()]
+    score = heuristic_scores(edge_index, num_nodes, context_edge_index=train_ctx_ei)
     recip_rate = reciprocity_flag(edge_index, num_nodes).mean()
     print(f"[heuristics] доля рёбер с обратным (2-cycle): {recip_rate*100:.2f}%")
 

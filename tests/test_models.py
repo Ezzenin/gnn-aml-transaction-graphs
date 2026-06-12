@@ -31,19 +31,20 @@ def test_compute_ports_single_per_node():
     assert compute_ports(edge_index, num_nodes=4).tolist() == [0, 0, 0]
 
 
-def _toy_batch(in_node=5, in_edge=6, n_nodes=8, n_edges=12):
+def _toy_batch(in_node=5, in_edge=6, n_nodes=8, n_edges=12, n_seed=4):
     torch.manual_seed(0)
     x = torch.randn(n_nodes, in_node)
     edge_index = torch.randint(0, n_nodes, (2, n_edges))
     edge_attr = torch.randn(n_edges, in_edge)
-    edge_label_index = torch.randint(0, n_nodes, (2, 4))  # 4 классифицируемых ребра
-    return x, edge_index, edge_attr, edge_label_index
+    edge_label_index = torch.randint(0, n_nodes, (2, n_seed))  # классифицируемые рёбра
+    edge_label_attr = torch.randn(n_seed, in_edge)             # их сырые признаки (P0.2)
+    return x, edge_index, edge_attr, edge_label_index, edge_label_attr
 
 
 def test_edge_gnn_base_forward_shape():
-    x, ei, ea, eli = _toy_batch()
+    x, ei, ea, eli, ela = _toy_batch()
     model = build_edge_model("gine", in_node=5, in_edge=6, hidden=16)
-    out = model(x, ei, ea, eli)
+    out = model(x, ei, ea, eli, ela)
     assert out.shape == (4, 2)  # 4 ребра × 2 логита
 
 
@@ -63,25 +64,37 @@ def test_add_reverse_edges():
 
 def test_edge_gnn_port_ego_forward_shape():
     # Батч-уровневые адаптации port+ego (reverse — на уровне данных, тест выше).
-    x, ei, ea, eli = _toy_batch()
+    x, ei, ea, eli, ela = _toy_batch()
     model = build_edge_model("gine", in_node=5, in_edge=6, hidden=16,
                              ports=True, ego_ids=True)
-    out = model(x, ei, ea, eli)
+    out = model(x, ei, ea, eli, ela)
     assert out.shape == (4, 2)
 
 
 def test_edge_gnn_reverse_consumes_data_level_flag():
-    # При reverse_mp данные уже содержат +1 столбец (флаг): in_edge=7, форма ок.
-    x, ei, _, eli = _toy_batch()
+    # При reverse_mp контекст уже содержит +1 столбец (флаг): in_edge=7;
+    # сид-ребро остаётся СЫРЫМ (in_edge_label=6).
+    x, ei, _, eli, ela = _toy_batch()
     ea7 = torch.randn(12, 7)
-    model = EdgeGNN(in_node=5, in_edge=7, hidden=16, reverse_mp=True)
-    out = model(x, ei, ea7, eli)
+    model = EdgeGNN(in_node=5, in_edge=7, in_edge_label=6, hidden=16, reverse_mp=True)
+    out = model(x, ei, ea7, eli, ela)
     assert out.shape == (4, 2)
 
 
+def test_edge_gnn_uses_target_edge_features():
+    # P0.2: при фиксированных x/edge_index/edge_attr/edge_label_index изменение
+    # edge_label_attr ДОЛЖНО менять логиты (иначе признаки транзакции игнорируются).
+    x, ei, ea, eli, ela = _toy_batch()
+    model = build_edge_model("gine", in_node=5, in_edge=6, hidden=16)
+    model.eval()
+    out1 = model(x, ei, ea, eli, ela)
+    out2 = model(x, ei, ea, eli, ela + 5.0)  # другие признаки сид-рёбер
+    assert not torch.allclose(out1, out2), "голова игнорирует признаки целевого ребра"
+
+
 def test_edge_gnn_each_adaptation_independently():
-    x, ei, ea, eli = _toy_batch()
+    x, ei, ea, eli, ela = _toy_batch()
     for flags in [dict(ports=True), dict(ego_ids=True)]:
         model = EdgeGNN(in_node=5, in_edge=6, hidden=16, **flags)
-        out = model(x, ei, ea, eli)
+        out = model(x, ei, ea, eli, ela)
         assert out.shape == (4, 2), f"сломалось на {flags}"

@@ -80,9 +80,14 @@ def run_all() -> None:
 
 
 def collect(results_dir: str = "results") -> list[dict]:
-    """Собрать test-метрики из всех *_metrics.json (кроме служебных)."""
+    """Собрать test-метрики ТОЛЬКО Elliptic (elliptic_*_metrics.json).
+
+    P1.4: после появления IBM-результатов нельзя грести все *_metrics.json в
+    одну сводку — Elliptic и IBM это разные задачи (node- vs edge-classification).
+    IBM собирается отдельным collect_ibm().
+    """
     rows = []
-    for path in sorted(glob.glob(os.path.join(results_dir, "*_metrics.json"))):
+    for path in sorted(glob.glob(os.path.join(results_dir, "elliptic_*_metrics.json"))):
         with open(path, "r", encoding="utf-8") as f:
             d = json.load(f)
         test = d.get("test_metrics", {})
@@ -294,8 +299,9 @@ def collect_per_pattern(results_dir: str = "results") -> tuple[list[str], dict]:
         if not pp:
             continue
         labels.append(label)
-        data[label] = {p: (pp.get(p, {}) or {}).get("f1", 0.0) for p in CANONICAL_PATTERNS}
-        data[label]["__npos__"] = {p: (pp.get(p, {}) or {}).get("n_pos", 0) for p in CANONICAL_PATTERNS}
+        pats = CANONICAL_PATTERNS + ["unknown"]
+        data[label] = {p: (pp.get(p, {}) or {}).get("f1", 0.0) for p in pats}
+        data[label]["__npos__"] = {p: (pp.get(p, {}) or {}).get("n_pos", 0) for p in pats}
     return labels, data
 
 
@@ -307,30 +313,39 @@ def write_per_pattern_table(labels: list[str], data: dict, results_dir: str = "r
     csv_path = os.path.join(results_dir, "per_pattern.csv")
     npos = data[labels[0]]["__npos__"] if labels else {}
 
+    rows_order = CANONICAL_PATTERNS + ["unknown"]
     cols = ["pattern", "n_pos"] + labels
     with open(csv_path, "w", newline="", encoding="utf-8") as f:
         w = csv.writer(f)
         w.writerow(cols)
-        for p in CANONICAL_PATTERNS:
+        for p in rows_order:
             w.writerow([p, npos.get(p, 0)] + [f"{data[l][p]:.4f}" for l in labels])
 
     header = "| " + " | ".join(cols) + " |"
     sep = "|" + "|".join(["---"] * len(cols)) + "|"
     lines = [header, sep]
-    for p in CANONICAL_PATTERNS:
+    for p in rows_order:
+        # «Лучшее» считаем только среди 8 канонических (unknown — справочно).
         vals = {l: data[l][p] for l in labels}
-        best = max(vals, key=vals.get) if vals else None
+        best = max(vals, key=vals.get) if (vals and p != "unknown") else None
         cells = []
         for l in labels:
             v = vals[l]
             cells.append(f"**{v:.3f}**" if l == best and v > 0 else f"{v:.3f}")
         lines.append("| " + " | ".join([p, str(npos.get(p, 0))] + cells) + " |")
-    md = ("# IBM AML: F1 по 8 паттернам отмывания (test, RQ3)\n\n"
-          "Жирным — лучшее семейство для паттерна. n_pos — число позитивов этого\n"
-          "типа в test. Фактический итог: XGBoost лидирует на ВСЕХ паттернах (вкл.\n"
-          "структурные cycle/scatter_gather, где ожидался перевес GNN); GNN-семейства\n"
-          "следом, reverse-адаптации тянут Multi-GNN вниз; степенные эвристики\n"
-          "не дискриминативны (illicit-счета НИЖЕ по степени, чем легитимные —\n"
+
+    matched = sum(npos.get(p, 0) for p in CANONICAL_PATTERNS)
+    unknown_n = npos.get("unknown", 0)
+    md = ("# IBM AML: F1 по паттернам отмывания (test, RQ3)\n\n"
+          f"**Coverage:** из размеченных laundering-рёбер в test {matched} имеют тип\n"
+          f"из 8 паттернов `HI-Small_Patterns.txt`, ещё {unknown_n} — `unknown` (нет\n"
+          "совпадения в Patterns.txt). Анализ «по 8 паттернам» относится к первой\n"
+          "группе; формулировать как «по размеченным паттернам», не «по всем\n"
+          "laundering-рёбрам». Строка `unknown` — справочно.\n\n"
+          "Жирным — лучшее семейство для паттерна. Фактический итог: XGBoost лидирует\n"
+          "на всех паттернах (вкл. структурные cycle/scatter_gather, где ожидался\n"
+          "перевес GNN); GNN-семейства следом, reverse тянет Multi-GNN вниз; степенные\n"
+          "эвристики не дискриминативны (illicit-счета НИЖЕ по степени, чем легитимные —\n"
           "отмывание через низкостепенных «мулов», не хабы).\n\n"
           + "\n".join(lines) + "\n")
     with open(md_path, "w", encoding="utf-8") as f:

@@ -173,6 +173,7 @@ def load_ibm_aml(
     max_rows: Optional[int] = None,
     test_fraction: float = 0.2,
     val_fraction: float = 0.15,
+    include_time: bool = True,
 ) -> Tuple["object", dict]:
     """Загрузить IBM AML (variant) как направленный мультиграф PyG (edge-classification).
 
@@ -249,14 +250,16 @@ def load_ibm_aml(
         axis=1,
     ).astype(np.float32)
 
-    # Признаки рёбер.
+    # Признаки рёбер. norm_time опционален (P1.6): под temporal split абсолютное
+    # время может быть shortcut между train/val/test — include_time=False даёт
+    # ablation «без времени».
     t_min, t_max = float(ts.min()), float(ts.max())
     norm_time = (ts - t_min) / max(t_max - t_min, 1.0)
-    edge_attr = np.stack(
-        [np.log1p(amt_paid), np.log1p(amt_recv),
-         recv_cur.astype(float), pay_cur.astype(float), fmt.astype(float), norm_time],
-        axis=1,
-    ).astype(np.float32)
+    edge_feats = [np.log1p(amt_paid), np.log1p(amt_recv),
+                  recv_cur.astype(float), pay_cur.astype(float), fmt.astype(float)]
+    if include_time:
+        edge_feats.append(norm_time)
+    edge_attr = np.stack(edge_feats, axis=1).astype(np.float32)
 
     from torch_geometric.data import Data
 
@@ -286,6 +289,7 @@ def load_ibm_aml(
         "num_edges": n_edges,
         "num_node_features": x.shape[1],
         "num_edge_features": edge_attr.shape[1],
+        "include_time": include_time,
         "n_illicit": int(label.sum()),
         "illicit_rate": float(label.mean()),
         "patterns_matched": n_matched,

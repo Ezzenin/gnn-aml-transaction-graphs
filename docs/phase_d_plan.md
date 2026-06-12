@@ -17,6 +17,29 @@
 > git push
 > ```
 >
+> ### ⚠️ ОБНОВЛЕНИЕ 2 (аудит-фиксы P0/P1 — нужен перепрогон GNN)
+> Аудит выявил две P0-проблемы (исправлены в коде на Mac, smoke-проверено):
+> - **P0.2 edge-head**: голова теперь `[h_u‖h_v‖e_label]` — использует признаки
+>   самой транзакции (раньше игнорировала; сравнение с XGBoost было нечестным).
+> - **P0.1 строгий контекст**: message-passing граф — train для train/val-сидов,
+>   train+val для test (раньше семплинг шёл по всему графу → утечка будущего).
+>
+> Старые `results/ibm_gine*`/`ibm_multignn` GNN-числа **устарели**. Перепрогнать
+> на ПК (CUDA) 5 основных вариантов + base без времени (P1.6 norm_time ablation):
+> ```bash
+> git pull
+> for c in ibm_gine ibm_gine_rev ibm_gine_port ibm_gine_ego ibm_multignn ibm_gine_notime; do
+>   python -m src.train_edge --config configs/$c.yaml
+> done
+> git add results/ibm_gine*_metrics.json results/ibm_multignn_metrics.json \
+>         results/ibm_gine*_pr_curve.png results/ibm_multignn_pr_curve.png
+> git commit -m "feat: перепрогон IBM GNN после аудит-фиксов P0/P1" && git push
+> ```
+> XGBoost (с временем и без — `ibm_xgboost`, `ibm_xgboost_notime`) и эвристики
+> уже посчитаны на Mac (P0 их не затрагивает). Сводки (`--ibm`) пересоберу на Mac.
+> NB: XGBoost без времени (0.240) >> с временем (0.129) — norm_time при temporal
+> split вреден, не shortcut.
+>
 > ### ⚠️ ОБНОВЛЕНИЕ (фикс reverse MP)
 > Первый прогон дал аномалию: reverse MP проседал втрое (обратно выводу Egressy).
 > Причина — обратные рёбра добавлялись ПОСЛЕ семплинга loader'ом, окрестность не

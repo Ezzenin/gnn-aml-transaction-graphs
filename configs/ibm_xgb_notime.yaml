@@ -1,0 +1,27 @@
+# Бейзлайн C1: XGBoost на рёбрах IBM AML HI-Small (edge-classification).
+seed: 42
+
+dataset:
+  include_time: false   # P1.6: ablation без norm_time
+  name: ibm_aml
+  root: data/ibm_aml
+  variant: HI-Small
+  # max_rows: 200000   # раскомментировать для быстрого прогона на подвыборке
+
+model:
+  type: xgboost           # xgboost | logreg
+  params:
+    n_estimators: 400
+    max_depth: 7
+    learning_rate: 0.1
+    subsample: 0.8
+    colsample_bytree: 0.8
+    n_jobs: 0             # 0 = все ядра (на 3.3М рёбер нужна скорость)
+
+output_dir: results
+output_name: ibm_xgboost_notime
+
+wandb:
+  enabled: false
+  project: gnn-aml
+  entity: null

@@ -108,6 +108,7 @@ def run_ibm_baseline(config: dict) -> dict:
         root=ds_cfg.get("root", "data/ibm_aml"),
         variant=ds_cfg.get("variant", "HI-Small"),
         max_rows=ds_cfg.get("max_rows"),
+        include_time=ds_cfg.get("include_time", True),
     )
     print(f"[data] IBM {meta['variant']}: {meta['num_edges']:,} рёбер, "
           f"illicit={meta['n_illicit']} ({meta['illicit_rate']*100:.3f}%); "
