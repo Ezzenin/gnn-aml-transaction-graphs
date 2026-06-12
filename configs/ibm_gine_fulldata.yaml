@@ -21,6 +21,7 @@ model:
 
 train:
   full_data: true        # учить на ВСЕХ train-рёбрах (class weights)
+  pos_weight: 100        # авто neg/pos (~1290) коллапсирует в «всё-позитив»; понижено (план: 50–100)
   num_neighbors: [10, 10]
   batch_size: 2048
   neg_ratio: 20           # негативов = 20×позитивов в train-наборе
