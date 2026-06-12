@@ -11,3 +11,24 @@
 | +port | 0.0354 | 0.1002 | 0.0000 | 0.1051 |
 | +ego | 0.0491 | 0.1245 | 0.0000 | 0.1418 |
 | Multi-GNN (full) | 0.0125 | 0.0332 | 0.0000 | 0.2297 |
+
+## Reference results (literature) — F1-minority, %
+
+> ⚠️ Другой сплит (60/20/20) и режим обучения (все train-рёбра, class
+> weights). НЕ сравнивать напрямую с нашими AUC-PR/F1 выше; приведено для
+> ориентира масштаба и анализа расхождений (см. docs/lit_benchmarks.md).
+
+| Модель (источник) | F1-minority % | примечание |
+|---|---|---|
+| XGBoost+GF (Altman 2023) | 63.2 | + подграфовые fan/cycle-фичи (GFP) |
+| LightGBM+GF (Altman 2023) | 62.9 |  |
+| GIN base (Egressy 2024) | 28.7 | 2 слоя, все train-рёбра, class weights |
+| GIN+Ports | 54.9 | port numbering |
+| GIN+ReverseMP | 46.8 | reverse MP — у нас не переносится при [10,10] |
+| Multi-GIN (rev+port+ego) | 57.1 | ego поверх rev+port почти не добавляет |
+| Multi-PNA+EU (SOTA) | 68.2 | единственный обошёл GBT+GF на всех AML |
+| XGBoost без GF (Blanuša 2024) | 24.5 | ≈ наш XGBoost 19.0 по порядку |
+
+Наш режим ослаблен (сабсэмпл негативов, окрестности [10,10], без edge-
+updates, XGBoost без подграфовых GF-фич), поэтому абсолютные числа ниже;
+воспроизводим направление эффекта, см. docs/lit_review.md.

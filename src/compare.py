@@ -66,6 +66,18 @@ IBM_VARIANTS_FULLDATA = [
     ("ibm_multignn_fulldata", "Multi-GNN (full)"),
 ]
 IBM_METRIC_KEYS = ["auc_pr", "f1", "recall_at_precision_90", "recall"]
+# Опубликованные F1-minority (%) на AML Small HI — для справки, НЕ сравнивать в одну
+# колонку с нашими (другой сплит 60/20/20, обучение на всех рёбрах). См. docs/lit_benchmarks.md.
+LITERATURE_F1_HI = [
+    ("XGBoost+GF (Altman 2023)", 63.23, "+ подграфовые fan/cycle-фичи (GFP)"),
+    ("LightGBM+GF (Altman 2023)", 62.86, ""),
+    ("GIN base (Egressy 2024)", 28.70, "2 слоя, все train-рёбра, class weights"),
+    ("GIN+Ports", 54.85, "port numbering"),
+    ("GIN+ReverseMP", 46.79, "reverse MP — у нас не переносится при [10,10]"),
+    ("Multi-GIN (rev+port+ego)", 57.15, "ego поверх rev+port почти не добавляет"),
+    ("Multi-PNA+EU (SOTA)", 68.16, "единственный обошёл GBT+GF на всех AML"),
+    ("XGBoost без GF (Blanuša 2024)", 24.50, "≈ наш XGBoost 19.0 по порядку"),
+]
 BASE_LABEL = "GINe (base)"
 GNN_ORDER = [BASE_LABEL, "+reverse", "+port", "+ego", "Multi-GNN (full)"]
 
@@ -236,12 +248,31 @@ def write_ibm_table(rows: list[dict], results_dir: str = "results",
     md = (f"# IBM AML HI-Small (test): бейзлайн + ablation Multi-GNN{regime}\n\n"
           "Главные метрики: AUC-PR и F1 (позитив = laundering). Ablation: вклад\n"
           "адаптаций reverse / port / ego поверх базовой GINe (RQ2).\n\n"
-          + "\n".join(lines) + "\n")
+          + "\n".join(lines) + "\n"
+          + _literature_block())
     with open(md_path, "w", encoding="utf-8") as f:
         f.write(md)
 
     print("\n" + "\n".join(lines))
     print(f"\n[saved] {csv_path}\n[saved] {md_path}")
+
+
+def _literature_block() -> str:
+    """Справочный блок опубликованных F1 (НЕ в одну колонку с нашими — другой режим)."""
+    lines = ["", "## Reference results (literature) — F1-minority, %",
+             "",
+             "> ⚠️ Другой сплит (60/20/20) и режим обучения (все train-рёбра, class",
+             "> weights). НЕ сравнивать напрямую с нашими AUC-PR/F1 выше; приведено для",
+             "> ориентира масштаба и анализа расхождений (см. docs/lit_benchmarks.md).",
+             "", "| Модель (источник) | F1-minority % | примечание |",
+             "|---|---|---|"]
+    for name, f1, note in LITERATURE_F1_HI:
+        lines.append(f"| {name} | {f1:.1f} | {note} |")
+    lines += ["",
+              "Наш режим ослаблен (сабсэмпл негативов, окрестности [10,10], без edge-",
+              "updates, XGBoost без подграфовых GF-фич), поэтому абсолютные числа ниже;",
+              "воспроизводим направление эффекта, см. docs/lit_review.md.", ""]
+    return "\n".join(lines)
 
 
 def plot_ablation(rows: list[dict], results_dir: str = "results",
