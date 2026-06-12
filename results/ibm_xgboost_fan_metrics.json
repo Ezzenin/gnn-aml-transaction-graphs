@@ -1,0 +1,208 @@
+{
+  "config": {
+    "seed": 42,
+    "dataset": {
+      "include_time": false,
+      "fan_features": true,
+      "name": "ibm_aml",
+      "root": "data/ibm_aml",
+      "variant": "HI-Small"
+    },
+    "model": {
+      "type": "xgboost",
+      "params": {
+        "n_estimators": 400,
+        "max_depth": 7,
+        "learning_rate": 0.1,
+        "subsample": 0.8,
+        "colsample_bytree": 0.8,
+        "n_jobs": 0
+      }
+    },
+    "output_dir": "results",
+    "output_name": "ibm_xgboost_fan",
+    "wandb": {
+      "enabled": false,
+      "project": "gnn-aml",
+      "entity": null
+    }
+  },
+  "dataset_meta": {
+    "variant": "HI-Small",
+    "num_nodes": 515088,
+    "num_edges": 5078345,
+    "num_node_features": 5,
+    "num_edge_features": 5,
+    "include_time": false,
+    "n_illicit": 5177,
+    "illicit_rate": 0.0010194266045335635,
+    "patterns_matched": 3209,
+    "patterns_total_illicit": 5177,
+    "pattern_counts": {
+      "bipartite": 263,
+      "cycle": 287,
+      "fan_in": 318,
+      "fan_out": 342,
+      "gather_scatter": 716,
+      "random": 191,
+      "scatter_gather": 626,
+      "stack": 466,
+      "unknown": 1968
+    },
+    "encoders": {
+      "receiving_currency": [
+        "US Dollar",
+        "Bitcoin",
+        "Euro",
+        "Australian Dollar",
+        "Yuan",
+        "Rupee",
+        "Mexican Peso",
+        "Yen",
+        "UK Pound",
+        "Ruble",
+        "Canadian Dollar",
+        "Swiss Franc",
+        "Brazil Real",
+        "Saudi Riyal",
+        "Shekel"
+      ],
+      "payment_currency": [
+        "US Dollar",
+        "Bitcoin",
+        "Euro",
+        "Australian Dollar",
+        "Yuan",
+        "Rupee",
+        "Yen",
+        "Mexican Peso",
+        "UK Pound",
+        "Ruble",
+        "Canadian Dollar",
+        "Swiss Franc",
+        "Brazil Real",
+        "Saudi Riyal",
+        "Shekel"
+      ],
+      "payment_format": [
+        "Reinvestment",
+        "Cheque",
+        "Credit Card",
+        "ACH",
+        "Cash",
+        "Wire",
+        "Bitcoin"
+      ]
+    },
+    "time_range_unix": [
+      1661990400,
+      1663517880
+    ],
+    "splits": {
+      "train": {
+        "n": 3300881,
+        "n_pos": 2556,
+        "pos_rate": 0.0007743387295694695
+      },
+      "val": {
+        "n": 761582,
+        "n_pos": 823,
+        "pos_rate": 0.0010806452883602817
+      },
+      "test": {
+        "n": 1015882,
+        "n_pos": 1798,
+        "pos_rate": 0.0017698905975300282
+      }
+    }
+  },
+  "model_type": "xgboost",
+  "fixed_threshold_from_val": 0.9850583076477051,
+  "val_metrics": {
+    "auc_pr": 0.25131274264594344,
+    "roc_auc": 0.9755741634740789,
+    "f1": 0.3034563561804335,
+    "precision": 0.29298642533936653,
+    "recall": 0.31470230862697446,
+    "recall_at_precision_90": 0.06804374240583232,
+    "n_pos": 823,
+    "n_neg": 760759,
+    "threshold": 0.9850583076477051
+  },
+  "test_metrics": {
+    "auc_pr": 0.22823507358714756,
+    "roc_auc": 0.9696994108940757,
+    "f1": 0.2825030376670717,
+    "precision": 0.3112449799196787,
+    "recall": 0.25862068965517243,
+    "recall_at_precision_90": 0.01557285873192436,
+    "n_pos": 1798,
+    "n_neg": 1014084,
+    "threshold": 0.9850583076477051
+  },
+  "per_pattern": {
+    "fan_out": {
+      "f1": 0.0867430441898527,
+      "precision": 0.048983364140480594,
+      "recall": 0.37857142857142856,
+      "n_pos": 140,
+      "n_detected": 53
+    },
+    "fan_in": {
+      "f1": 0.07431874483897605,
+      "precision": 0.04189944134078212,
+      "recall": 0.3284671532846715,
+      "n_pos": 137,
+      "n_detected": 45
+    },
+    "gather_scatter": {
+      "f1": 0.16549069916613213,
+      "precision": 0.11139896373056994,
+      "recall": 0.32169576059850374,
+      "n_pos": 401,
+      "n_detected": 129
+    },
+    "scatter_gather": {
+      "f1": 0.09940652818991098,
+      "precision": 0.06113138686131387,
+      "recall": 0.26587301587301587,
+      "n_pos": 252,
+      "n_detected": 67
+    },
+    "cycle": {
+      "f1": 0.06627017841971113,
+      "precision": 0.03651685393258427,
+      "recall": 0.3577981651376147,
+      "n_pos": 109,
+      "n_detected": 39
+    },
+    "random": {
+      "f1": 0.03524229074889868,
+      "precision": 0.019065776930409915,
+      "recall": 0.23255813953488372,
+      "n_pos": 86,
+      "n_detected": 20
+    },
+    "bipartite": {
+      "f1": 0.046058458813108945,
+      "precision": 0.024644549763033177,
+      "recall": 0.35135135135135137,
+      "n_pos": 74,
+      "n_detected": 26
+    },
+    "stack": {
+      "f1": 0.06456953642384106,
+      "precision": 0.03651685393258427,
+      "recall": 0.2785714285714286,
+      "n_pos": 140,
+      "n_detected": 39
+    },
+    "unknown": {
+      "f1": 0.06123778501628664,
+      "precision": 0.04368029739776952,
+      "recall": 0.10239651416122005,
+      "n_pos": 459,
+      "n_detected": 47
+    }
+  }
+}

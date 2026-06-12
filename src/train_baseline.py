@@ -115,7 +115,7 @@ def run_ibm_baseline(config: dict) -> dict:
           f"splits={{train:{meta['splits']['train']['n']}, "
           f"val:{meta['splits']['val']['n']}, test:{meta['splits']['test']['n']}}}")
 
-    X = build_edge_features(data)
+    X = build_edge_features(data, fan_features=bool(ds_cfg.get("fan_features", False)))
     y = data.edge_label.numpy()
     tr, va, te = data.train_mask.numpy(), data.val_mask.numpy(), data.test_mask.numpy()
     print(f"[features] X={X.shape}; pos train/val/test = "

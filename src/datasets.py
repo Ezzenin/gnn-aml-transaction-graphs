@@ -310,7 +310,7 @@ def load_ibm_aml(
     return data, meta
 
 
-def build_edge_features(data) -> np.ndarray:
+def build_edge_features(data, fan_features: bool = False) -> np.ndarray:
     """Табличные признаки ребра для XGBoost-бейзлайна на IBM AML.
 
     Состав: edge_attr (6) + узловые фичи отправителя (5) + узловые фичи
@@ -318,6 +318,12 @@ def build_edge_features(data) -> np.ndarray:
     Число параллельных рёбер считается ПО TRAIN-рёбрам (антиутечка), узловые
     фичи в data.x тоже посчитаны по train. Векторизовано через целочисленный
     ключ пары src*num_nodes+dst.
+
+    fan_features (GFP-стиль, Blanuša 2024): добавить число РАЗЛИЧНЫХ контрагентов
+    отправителя (distinct out — fan-out) и получателя (distinct in — fan-in),
+    считая по train-рёбрам. Отличается от degree в data.x: degree считает все
+    рёбра (с кратностью), fan — уникальных соседей; именно fan-фичи дают у GFP
+    основной прирост (+30пп). +2 признака (log1p). Антиутечка сохранена.
     """
     src = data.edge_index[0].numpy()
     dst = data.edge_index[1].numpy()
@@ -331,9 +337,17 @@ def build_edge_features(data) -> np.ndarray:
     idx = np.clip(np.searchsorted(uniq, key_all), 0, max(len(uniq) - 1, 0))
     parallel = np.where(uniq[idx] == key_all, cnt[idx], 0).astype(np.float32)
 
-    return np.concatenate(
-        [ea, x[src], x[dst], np.log1p(parallel).reshape(-1, 1)], axis=1
-    ).astype(np.float32)
+    feats = [ea, x[src], x[dst], np.log1p(parallel).reshape(-1, 1)]
+    if fan_features:
+        # uniq — уже уникальные (src,dst)-ключи train-рёбер: распакуем в число
+        # различных соседей по каждому узлу (fan-out по src, fan-in по dst).
+        u_src, u_dst = uniq // num_nodes, uniq % num_nodes
+        distinct_out = np.bincount(u_src, minlength=num_nodes).astype(np.float32)
+        distinct_in = np.bincount(u_dst, minlength=num_nodes).astype(np.float32)
+        feats += [np.log1p(distinct_out[src]).reshape(-1, 1),
+                  np.log1p(distinct_in[dst]).reshape(-1, 1)]
+
+    return np.concatenate(feats, axis=1).astype(np.float32)
 
 
 def load_node_time_steps(root: str = "data/elliptic") -> np.ndarray:
