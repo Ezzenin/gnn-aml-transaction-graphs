@@ -24,22 +24,18 @@
   см. блок «Что делать на ПК» в начале `docs/phase_d_plan.md`.
 - Дальше: E (per-pattern + эвристики), G1 (Streamlit антифрод), H (воспроизводимость).
 
-## ⚠️ НУЖНО ПЕРЕНЕСТИ ЧЕКПОИНТ С ПК (для Фазы G1 Streamlit)
-Чекпоинты (`*.pt`) в `.gitignore`, по git не приезжают. Для G1 нужен ОДИН свежий
-чекпоинт обученной edge-GNN с ПК. Рекомендуемый: **`checkpoints/ibm_multignn_fulldata.pt`**
-(полный Multi-GNN, демонстрирует метод КР) ИЛИ **`checkpoints/ibm_gine_fulldata.pt`**
-(лучший GNN по AUC-PR 0.054). Оба — режим full-data/no-time, актуальная архитектура
-(edge-head + in_edge_label, pos_weight=100).
+## Чекпоинты для G1 (перенесены с ПК, оба в `main`, force-add `-f`)
+Два рабочих чекпоинта (full-data/no-time, актуальная архитектура с `label_edge_enc`,
+pos_weight=100), оба грузятся текущим кодом — проверено:
+- **`checkpoints/ibm_gine_fulldata.pt`** — base GINe, test AUC-PR **0.054** (лучший
+  GNN). **← ДЕФОЛТ для Streamlit G1.** in_edge=5/label=5, threshold≈0.492, флаги 0/0/0.
+- `checkpoints/ibm_multignn_fulldata.pt` — полный Multi-GNN (reverse+port+ego),
+  AUC-PR 0.041. Для скриншота «иллюстрация метода». in_edge=6/label=5, threshold≈0.360.
 
-Как перенести (любой способ):
-- git (надёжно, файл ~150KB): на ПК `git add -f checkpoints/ibm_multignn_fulldata.pt`,
-  закоммитить, запушить → на Mac `git pull`. (`-f` обходит .gitignore.)
-- или вручную скопировать `.pt` в `checkpoints/` на Mac (scp / облако / USB).
-
-ВАЖНО: локальный `checkpoints/ibm_gine.pt` (9 июня) — УСТАРЕЛ (старая голова без
-`label_edge_enc`, до P0.2), текущим кодом не загрузится. Не использовать для G1.
-Чекпоинт хранит state_dict + config + in_node/in_edge/in_edge_label + threshold —
-их использует загрузчик в `src/eval.py` (TODO G1).
+G1-загрузчик (`src/eval.py`, TODO) должен быть чекпоинт-агностичным: путь из конфига
+Streamlit, дефолт = `ibm_gine_fulldata.pt`. Метаданные/обоснование выбора —
+`docs/checkpoint_transfer_note.md`. (Старый `ibm_gine.pt` от 9 июня НЕ грузится —
+старая голова до P0.2, не использовать.)
 
 ## Гибрид-тактика (Mac ↔ ПК)
 Код, конфиги, сборка артефактов/графиков — на **Mac** (CPU достаточно). На **ПК с
