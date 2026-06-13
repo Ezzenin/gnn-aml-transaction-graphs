@@ -86,10 +86,13 @@ CANONICAL_PATTERNS = [
     "fan_out", "fan_in", "gather_scatter", "scatter_gather",
     "cycle", "random", "bipartite", "stack",
 ]
+# Per-pattern собирается в финальном (лучшем) режиме full-data/no-time: лучшая
+# версия каждого семейства, согласовано с финальным нарративом (XGBoost no-time —
+# выбранный baseline). Режим явно указан в заголовке таблицы.
 PER_PATTERN_FAMILIES = [
-    ("ibm_xgboost", "XGBoost"),
-    ("ibm_gine", "GINe (base)"),
-    ("ibm_multignn", "Multi-GNN"),
+    ("ibm_xgboost_notime", "XGBoost"),
+    ("ibm_gine_fulldata", "GINe (base)"),
+    ("ibm_multignn_fulldata", "Multi-GNN"),
     ("ibm_heuristics", "Эвристики"),
 ]
 
@@ -387,6 +390,8 @@ def write_per_pattern_table(labels: list[str], data: dict, results_dir: str = "r
     matched = sum(npos.get(p, 0) for p in CANONICAL_PATTERNS)
     unknown_n = npos.get("unknown", 0)
     md = ("# IBM AML: F1 по паттернам отмывания (test, RQ3)\n\n"
+          "_Режим: full-data/no-time — лучшая версия каждого семейства (XGBoost\n"
+          "no-time, GINe/Multi-GNN full-data, эвристики)._\n\n"
           f"**Coverage:** из размеченных laundering-рёбер в test {matched} имеют тип\n"
           f"из 8 паттернов `HI-Small_Patterns.txt`, ещё {unknown_n} — `unknown` (нет\n"
           "совпадения в Patterns.txt). Анализ «по 8 паттернам» относится к первой\n"
@@ -461,9 +466,14 @@ def summarize_ibm(results_dir: str = "results") -> None:
     # Режим full-data обучения (no-time + все train-рёбра) — если перепрогнан.
     rows_fd = collect_ibm(results_dir, IBM_VARIANTS_FULLDATA)
     if len([r for r in rows_fd if r["variant"] != "XGBoost"]) >= 2:
-        print("\n=== режим full-data (no-time + все train-рёбра) ===")
-        write_ibm_table(rows_fd, results_dir, name="ibm_comparison_fulldata", regime=" (full-data, no-time)")
-        plot_ablation(rows_fd, results_dir, out_name="ablation_fulldata", regime=" (full-data)")
+        n_gnn = len([r for r in rows_fd if r["variant"] not in ("XGBoost",)])
+        # Полный ablation только если есть промежуточные варианты (rev/port/ego),
+        # иначе это сравнение base vs full (честно отражаем в заголовке).
+        partial = n_gnn < 4
+        tag = " (full-data/no-time — base vs full)" if partial else " (full-data/no-time)"
+        print(f"\n=== режим full-data (no-time + все train-рёбра){' — base vs full' if partial else ''} ===")
+        write_ibm_table(rows_fd, results_dir, name="ibm_comparison_fulldata", regime=tag)
+        plot_ablation(rows_fd, results_dir, out_name="ablation_fulldata", regime=tag)
 
     summarize_per_pattern(results_dir)
 

@@ -26,7 +26,7 @@ fan-out, fan-in, gather-scatter, scatter-gather, simple cycle, random, bipartite
 ```
 data/          # датасеты (в .gitignore; PyG скачивает Elliptic сюда)
 src/           # модели, граф-билдеры, обучение, метрики, бейзлайны
-app/           # Streamlit-демо (два режима: AML + personal finance)
+app/           # Streamlit-демо: AML / антифрод (personal finance — в перспективах)
 notebooks/     # исследовательские ноутбуки, EDA, графики
 configs/       # YAML-конфиги экспериментов
 tests/         # юнит-тесты (граф-билдеры, метрики)

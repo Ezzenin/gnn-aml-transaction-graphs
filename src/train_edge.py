@@ -2,8 +2,10 @@
 
 Edge-classification на направленном мультиграфе «узел=счёт, ребро=транзакция».
 Дисбаланс ~0.1%: train-набор = все illicit-рёбра + подвыборка негативов
-(neg_ratio). Полный граф используется для сэмплинга соседей. Порог фиксируется
-по val, метрики (общая + per-pattern) считаются на полном test.
+(neg_ratio), либо все train-рёбра при train.full_data=true. Message-passing
+контекст СТРОГО без утечки (P0.1): train/val семплируются из train-контекста,
+test — из train+val-контекста (см. _context_data). Порог фиксируется по val,
+метрики (общая + per-pattern) считаются на полном test.
 
 Пример:
     python -m src.train_edge --config configs/ibm_gine.yaml

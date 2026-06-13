@@ -1,35 +1,33 @@
-# Записка: альтернативный чекпоинт для Фазы G1 (Streamlit)
+# Демо-чекпоинты в `main` (Фаза G1, Streamlit)
 
-Эта ветка (`alt-checkpoint-gine-fulldata`) — **альтернатива** к чекпоинту,
-перенесённому в `main`. Mac выбирает, какой из двух использовать для G1; оба
-с ПК (RTX 3070), актуальная архитектура (edge-head `label_edge_enc`, P0.2),
-режим **full-data / no-time, `pos_weight=100`** (не вырожденные — авто
-`pos_weight≈1290` коллапсировал в «всё-позитив», понижен до 100).
+В репозитории (`main`) лежат **два** обученных на ПК (RTX 3070) чекпоинта edge-GNN,
+актуальная архитектура (edge-head `label_edge_enc`, P0.2), режим **full-data /
+no-time, `pos_weight=100`**. Добавлены через `git add -f` (в `.gitignore` есть
+`checkpoints/`/`*.pt`); ~150–170KB каждый. Оба грузятся `src.eval.load_edge_model`.
 
-## Два чекпоинта на выбор
+> Замечание о `pos_weight`: авто-значение neg/pos (~1290) при дисбалансе 0.1%
+> коллапсирует модель в «всё-позитив» (recall=1.0, AUC-PR≈случайность); поэтому
+> в `configs/ibm_*_fulldata.yaml` задан `pos_weight=100`.
 
-| чекпоинт | где | модель | test AUC-PR | test F1 | когда брать |
-|---|---|---|---|---|---|
-| `ibm_multignn_fulldata.pt` | `main` (df9e44e) | полный Multi-GNN (reverse+port+ego) | 0.041 | 0.113 | **демонстрирует метод КР** (RQ2: мультиграфовые адаптации) |
-| `ibm_gine_fulldata.pt` | **эта ветка** | base GINe (без адаптаций) | **0.054** | 0.116 | **лучший GNN по метрике** среди всех режимов |
+## Два чекпоинта
 
-Tradeoff: Multi-GNN показывает сам метод курсовой (адаптации), но base GINe
-даёт numerically лучший AUC-PR. Для демо-витрины «работающей модели» — base;
-для иллюстрации вклада адаптаций — Multi-GNN. Метрики близкие, разница в пределах
-шума прогона.
+| чекпоинт | модель | test AUC-PR | test F1 | роль |
+|---|---|---|---|---|
+| **`checkpoints/ibm_gine_fulldata.pt`** | base GINe (без адаптаций) | **0.054** | 0.116 | **дефолт Streamlit** — лучший GNN по метрике |
+| `checkpoints/ibm_multignn_fulldata.pt` | полный Multi-GNN (reverse+port+ego) | 0.041 | 0.113 | для скриншота «иллюстрация метода» (RQ2) |
 
-## Метаданные альтернативного чекпоинта (`ibm_gine_fulldata.pt`)
-- `in_node=5, in_edge=5, in_edge_label=5`, `threshold≈0.492`
-- флаги модели: `reverse_mp=False, ports=False, ego_ids=False`
-- ключи: `state_dict / config / in_node / in_edge / in_edge_label / threshold`
-  — грузится загрузчиком `src/eval.py` (TODO G1).
+Метрики близкие (разница в пределах шума прогона). Дефолт продукта — base GINe;
+переключение в сайдбаре `app/streamlit_app.py`. Загрузчик чекпоинт-агностичен:
+архитектура восстанавливается из метаданных (`in_node/in_edge/in_edge_label` +
+флаги адаптаций из `config`), ключи: `state_dict / config / in_node / in_edge /
+in_edge_label / threshold`.
 
-## Как забрать на Mac
+## Как пересоздать на CUDA
 ```bash
-git fetch origin
-git checkout alt-checkpoint-gine-fulldata -- checkpoints/ibm_gine_fulldata.pt
-# или влить всю ветку: git merge alt-checkpoint-gine-fulldata
+python -m src.train_edge --config configs/ibm_gine_fulldata.yaml      # base
+python -m src.train_edge --config configs/ibm_multignn_fulldata.yaml  # Multi-GNN
 ```
-Чекпоинт добавлен через `git add -f` (в `.gitignore` есть `checkpoints/`/`*.pt`).
-Это разовый перенос — после забора можно `git rm --cached checkpoints/*.pt`,
-чтобы `.gitignore` снова действовал.
+Чекпоинт сохраняется в `checkpoints/<output_name>.pt` (см. `save_checkpoint` в конфиге).
+
+> Старый `checkpoints/ibm_gine.pt` (до фикса P0.2) НЕ совместим с текущим кодом
+> (голова `2*hidden` vs `3*hidden`) — не использовать.
