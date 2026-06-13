@@ -24,6 +24,23 @@
   см. блок «Что делать на ПК» в начале `docs/phase_d_plan.md`.
 - Дальше: E (per-pattern + эвристики), G1 (Streamlit антифрод), H (воспроизводимость).
 
+## ⚠️ НУЖНО ПЕРЕНЕСТИ ЧЕКПОИНТ С ПК (для Фазы G1 Streamlit)
+Чекпоинты (`*.pt`) в `.gitignore`, по git не приезжают. Для G1 нужен ОДИН свежий
+чекпоинт обученной edge-GNN с ПК. Рекомендуемый: **`checkpoints/ibm_multignn_fulldata.pt`**
+(полный Multi-GNN, демонстрирует метод КР) ИЛИ **`checkpoints/ibm_gine_fulldata.pt`**
+(лучший GNN по AUC-PR 0.054). Оба — режим full-data/no-time, актуальная архитектура
+(edge-head + in_edge_label, pos_weight=100).
+
+Как перенести (любой способ):
+- git (надёжно, файл ~150KB): на ПК `git add -f checkpoints/ibm_multignn_fulldata.pt`,
+  закоммитить, запушить → на Mac `git pull`. (`-f` обходит .gitignore.)
+- или вручную скопировать `.pt` в `checkpoints/` на Mac (scp / облако / USB).
+
+ВАЖНО: локальный `checkpoints/ibm_gine.pt` (9 июня) — УСТАРЕЛ (старая голова без
+`label_edge_enc`, до P0.2), текущим кодом не загрузится. Не использовать для G1.
+Чекпоинт хранит state_dict + config + in_node/in_edge/in_edge_label + threshold —
+их использует загрузчик в `src/eval.py` (TODO G1).
+
 ## Гибрид-тактика (Mac ↔ ПК)
 Код, конфиги, сборка артефактов/графиков — на **Mac** (CPU достаточно). На **ПК с
 RTX 3070** выполняется ТОЛЬКО CUDA-тяжёлое обучение GNN. Обмен — через git:
